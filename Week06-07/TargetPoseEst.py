@@ -41,6 +41,8 @@ def estimate_pose(camera_matrix, obj_info, robot_pose):
                               'lime': [5.5,5.5,7.5], 'tomato': [7.0,7.0,6.0], 
                               'capsicum': [8.0,8.0,10.0], 'potato': [10.0,7.0,7.0], 
                               'pumpkin': [9.0,9.0,10.0], 'garlic': [6.0,6.0,8.0]}
+    
+    
     #########
 
     # estimate target pose using bounding box and robot pose
@@ -51,20 +53,28 @@ def estimate_pose(camera_matrix, obj_info, robot_pose):
     # compute pose of the target based on bounding box info, true object height, and robot's pose
     pixel_height = target_box[3]
     pixel_center = target_box[0]
-    distance = true_height/pixel_height * focal_length  # estimated distance between the object and the robot based on height
+    distance = true_height/pixel_height * focal_length  # estimated distance between the robot and the centre of the image plane based on height
     # image size 640x480 pixels, 640/2=320
     x_shift = 320/2 - pixel_center              # x distance between bounding box centre and centreline in camera view
     theta = np.arctan(x_shift/focal_length)     # angle of object relative to the robot
-    horizontal_relative_distance = distance * np.sin(theta)     # relative distance between robot and object on x axis
-    vertical_relative_distance = distance * np.cos(theta)       # relative distance between robot and object on y axis
-    relative_pose = {'y': vertical_relative_distance, 'x': horizontal_relative_distance}    # relative object location
-
     ang = theta + robot_pose[2]     # angle of object in the world frame
+    
+   # relative object location
+    distance_obj = distance/np.cos(theta) # relative distance between robot and object
+    x_relative = distance_obj * np.cos(theta) # relative x pose
+    y_relative = distance_obj * np.sin(theta) # relative y pose
+    relative_pose = {'x': x_relative, 'y': y_relative}
+    #print(f'relative_pose: {relative_pose}')
 
-    # location of object in the world frame
-    target_pose = {'y': (robot_pose[1]+relative_pose['y']*np.sin(ang))[0],
-                   'x': (robot_pose[0]+relative_pose['x']*np.cos(ang))[0]}
-
+    # location of object in the world frame using rotation matrix
+    delta_x_world = x_relative * np.cos(ang) - y_relative * np.sin(ang)
+    delta_y_world = x_relative * np.sin(ang) + y_relative * np.cos(ang)
+    # add robot pose with delta target pose
+    target_pose = {'y': (robot_pose[1]+delta_y_world)[0],
+                   'x': (robot_pose[0]+delta_x_world)[0]}
+    #print(f'delta_x_world: {delta_x_world}, delta_y_world: {delta_y_world}')
+    #print(f'robot_pose_x: {robot_pose[0]}, robot_pose_y: {robot_pose[1]}')
+    #print(f'target_pose: {target_pose}')
     return target_pose
 
 
@@ -101,7 +111,7 @@ def merge_estimations(target_pose_dict):
     Sum_of_squared_distances = []
     print(X)
     silhouette_avg = []
-    K = range(2,15)
+    K = range(2,len(target_pose_dict)-1)
     for k in K:
         km = KMeans(n_clusters=k)
         km = km.fit(X)
@@ -131,11 +141,17 @@ def merge_estimations(target_pose_dict):
     idx = np.argmin(dist_to_new_cluster, axis = 0)
 
     for i in range(len(idx)):
-        target_est[key[idx[i]]] = {
+        current_fruit = key[idx[i]][:key[idx[i]].index("_")]
+        if i == 0 or current_fruit != prev_fruit:
+            fruit_count = 0
+        target_est[f'{current_fruit}_{fruit_count}'] = {
             'y' : round(kmeans.cluster_centers_[i,1],5),
             'x' : round(kmeans.cluster_centers_[i,0],5)
         }
-
+        prev_fruit = key[idx[i]][:key[idx[i]].index("_")]
+        fruit_count += 1
+    
+        
     #########
    
     return target_est
@@ -150,8 +166,8 @@ if __name__ == "__main__":
     camera_matrix = np.loadtxt(fileK, delimiter=',')
 
     # init YOLO model
-    model_path = f'{script_dir}/YOLO/model/yolov8_model_backup7.pt'
-    #Good YOLO models: 4, 5, 6 (really good), 7
+    model_path = f'{script_dir}/YOLO/model/yolov8_model_backup6.pt'
+    #Good YOLO models: 4, 6 (really good), 7
     yolo = Detector(model_path)
 
     # create a dictionary of all the saved images with their corresponding robot pose
