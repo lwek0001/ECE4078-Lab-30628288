@@ -5,7 +5,9 @@ import os
 import ast
 import cv2
 from YOLO.detector import Detector
-
+from sklearn.metrics import silhouette_score 
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
 
 # list of target fruits and vegs types
 # Make sure the names are the same as the ones used in your YOLO model
@@ -34,11 +36,11 @@ def estimate_pose(camera_matrix, obj_info, robot_pose):
 
     # there are 8 possible types of fruits and vegs
     ######### Replace with your codes #########
-    # TODO: measure actual sizes of targets [width, depth, height] and update the dictionary of true target dimensions
-    target_dimensions_dict = {'orange': [1.0,1.0,1.0], 'lemon': [1.0,1.0,1.0], 
-                              'lime': [1.0,1.0,1.0], 'tomato': [1.0,1.0,1.0], 
-                              'capsicum': [1.0,1.0,1.0], 'potato': [1.0,1.0,1.0], 
-                              'pumpkin': [1.0,1.0,1.0], 'garlic': [1.0,1.0,1.0]}
+    
+    target_dimensions_dict = {'orange': [8.0,8.0,7.5], 'lemon': [5.5,5.5,7.5], 
+                              'lime': [5.5,5.5,7.5], 'tomato': [7.0,7.0,6.0], 
+                              'capsicum': [8.0,8.0,10.0], 'potato': [10.0,7.0,7.0], 
+                              'pumpkin': [9.0,9.0,10.0], 'garlic': [6.0,6.0,8.0]}
     #########
 
     # estimate target pose using bounding box and robot pose
@@ -78,8 +80,62 @@ def merge_estimations(target_pose_dict):
     target_est = {}
 
     ######### Replace with your codes #########
-    # TODO: replace it with a solution to merge the multiple occurrences of the same class type (e.g., by a distance threshold)
-    target_est = target_pose_dict
+    
+    key = []
+    x = np.zeros(len(target_pose_dict))
+    y = np.zeros(len(target_pose_dict))
+    i = 0
+    for k, v in target_pose_dict.items():
+        x[i] = v['x']
+        y[i] = v['y']
+        key.append(k)
+        i += 1 
+    X = np.array(list(zip(x, y))).reshape(len(x), 2)
+    print(key)
+    plt.plot()
+    plt.xlim([-170, 170])
+    plt.ylim([-170, 170])
+    plt.title('Dataset')
+    plt.scatter(x, y)
+    plt.show()
+    Sum_of_squared_distances = []
+    print(X)
+    silhouette_avg = []
+    K = range(2,15)
+    for k in K:
+        km = KMeans(n_clusters=k)
+        km = km.fit(X)
+        Sum_of_squared_distances.append(km.inertia_)
+        score = silhouette_score(X, km.labels_, metric='euclidean')
+        silhouette_avg.append(score)
+        
+    print (f"Best K: {np.argmax(silhouette_avg)+2}")
+    best_k = int(np.argmax(silhouette_avg)+2)
+    
+    kmeans = KMeans(n_clusters=best_k, init='k-means++', random_state=42)
+    y_kmeans = kmeans.fit_predict(X)
+    
+    plt.title('K-means clustering (k={})'.format(best_k))
+    plt.scatter(X[:, 0], X[:, 1], c=y_kmeans)
+    plt.scatter(kmeans.cluster_centers_[:, 0],kmeans.cluster_centers_[:, 1], s=100, c='red')
+    plt.xlabel('Feature 1')
+    plt.ylabel('Feature 2')
+    plt.show()
+
+    dist_to_new_cluster = np.zeros([len(key),len(kmeans.cluster_centers_)])
+
+    for i in range(len(kmeans.cluster_centers_)):
+        for j in range(len(key)):
+            dist_to_new_cluster[j,i] = np.linalg.norm([x[j],y[j]] - kmeans.cluster_centers_[i,:])
+
+    idx = np.argmin(dist_to_new_cluster, axis = 0)
+
+    for i in range(len(idx)):
+        target_est[key[idx[i]]] = {
+            'y' : round(kmeans.cluster_centers_[i,1],5),
+            'x' : round(kmeans.cluster_centers_[i,0],5)
+        }
+
     #########
    
     return target_est
@@ -94,7 +150,8 @@ if __name__ == "__main__":
     camera_matrix = np.loadtxt(fileK, delimiter=',')
 
     # init YOLO model
-    model_path = f'{script_dir}/YOLO/model/yolov8_model.pt'
+    model_path = f'{script_dir}/YOLO/model/yolov8_model_backup7.pt'
+    #Good YOLO models: 4, 5, 6 (really good), 7
     yolo = Detector(model_path)
 
     # create a dictionary of all the saved images with their corresponding robot pose
@@ -110,19 +167,21 @@ if __name__ == "__main__":
     for image_path in image_poses.keys():
         input_image = cv2.imread(image_path)
         bounding_boxes, bbox_img = yolo.detect_single_image(input_image)
+        cv2.imwrite(f'{script_dir}/lab_output/bbox/{image_path.split("/")[-1]}', bbox_img)
         # cv2.imshow('bbox', bbox_img)
         # cv2.waitKey(0)
         robot_pose = image_poses[image_path]
 
+        
         for detection in bounding_boxes:
             # count the occurrence of each target type
             occurrence = detected_type_list.count(detection[0])
             target_pose_dict[f'{detection[0]}_{occurrence}'] = estimate_pose(camera_matrix, detection, robot_pose)
 
             detected_type_list.append(detection[0])
-
-    # merge the estimations of the targets so that there are at most 3 estimations of each target type
-    target_est = {}
+    
+    
+    # merge the estimations of the targets so that there are at most 3 estimations of each target type    target_est = {}
     target_est = merge_estimations(target_pose_dict)
     print(target_est)
     # save target pose estimations

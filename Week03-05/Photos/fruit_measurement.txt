@@ -1,0 +1,8 @@
+orange: 7.5cm height, 8cm width, 8cm depth
+lemon: 7.5cm length, 5.5cm depth, 5.5cm width 
+pumpkin: 8.8cm height, 9cm depth, 9cm width 
+potato: 10cm height, 7cm depth, 7cm width
+lime: 7.5cm length, 5.5cm depth, 5.5cm width 
+capsicum: 10cm height, 8cm depth, 8cm width 
+garlic: 8cm height, 6cm depth, 6cm depth 
+tomato: 6cm height, 7cm depth, 7cm depth
