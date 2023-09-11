@@ -37,10 +37,10 @@ def estimate_pose(camera_matrix, obj_info, robot_pose):
     # there are 8 possible types of fruits and vegs
     ######### Replace with your codes #########
     
-    target_dimensions_dict = {'orange': [8.0,8.0,7.5], 'lemon': [5.5,5.5,7.5], 
-                              'lime': [5.5,5.5,7.5], 'tomato': [7.0,7.0,6.0], 
-                              'capsicum': [8.0,8.0,10.0], 'potato': [10.0,7.0,7.0], 
-                              'pumpkin': [9.0,9.0,10.0], 'garlic': [6.0,6.0,8.0]}
+    target_dimensions_dict = {'orange': [0.08,0.08,0.075], 'lemon': [0.055,0.055,0.075], 
+                              'lime': [0.055,0.055,0.075], 'tomato': [0.070,0.070,0.060], 
+                              'capsicum': [0.080,0.080,0.0100], 'potato': [0.0100,0.070,0.070], 
+                              'pumpkin': [0.090,0.090,0.0100], 'garlic': [0.060,0.060,0.080]}
     
     
     #########
@@ -102,12 +102,12 @@ def merge_estimations(target_pose_dict):
         i += 1 
     X = np.array(list(zip(x, y))).reshape(len(x), 2)
     print(key)
-    plt.plot()
-    plt.xlim([-170, 170])
-    plt.ylim([-170, 170])
-    plt.title('Dataset')
-    plt.scatter(x, y)
-    plt.show()
+    # plt.plot()
+    # plt.xlim([-2, 2])
+    # plt.ylim([-2, 2])
+    # plt.title('Dataset')
+    # plt.scatter(x, y)
+    # plt.show()
     Sum_of_squared_distances = []
     print(X)
     silhouette_avg = []
