@@ -9,15 +9,15 @@ import argparse
 import time
 
 # import SLAM components
-# sys.path.insert(0, "{}/slam".format(os.getcwd()))
-# from slam.ekf import EKF
-# from slam.robot import Robot
-# import slam.aruco_detector as aruco
+sys.path.insert(0, "{}/slam".format(os.getcwd()))
+from slam.ekf import EKF
+from slam.robot import Robot
+import slam.aruco_detector as aruco
 
 # import utility functions
 sys.path.insert(0, "util")
-from pibot import PenguinPi
-import measure as measure
+from util.pibot import PenguinPi
+import util.measure as measure
 
 
 def read_true_map(fname):
@@ -64,7 +64,7 @@ def read_search_list():
     @return: search order of the target fruits
     """
     search_list = []
-    with open('search_list.txt', 'r') as fd:
+    with open('M4_prac_shopping_list.txt', 'r') as fd:
         fruits = fd.readlines()
 
         for fruit in fruits:
@@ -128,11 +128,12 @@ def drive_to_point(waypoint, robot_pose):
 
 def get_robot_pose():
     ####################################################
-    # TODO: replace with your codes to estimate the pose of the robot
+    
     # We STRONGLY RECOMMEND you to use your SLAM code from M2 here
 
     # update the robot pose [x,y,theta]
-    robot_pose = [0.0,0.0,0.0] # replace with your calculation
+    print()
+    # robot_pose = Robot.state
     ####################################################
 
     return robot_pose
@@ -140,7 +141,7 @@ def get_robot_pose():
 # main loop
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Fruit searching")
-    parser.add_argument("--map", type=str, default='M4_true_map_full.txt') # change to 'M4_true_map_part.txt' for lv2&3
+    parser.add_argument("--map", type=str, default='M4_prac_map_full.txt') # change to 'M4_true_map_part.txt' for lv2&3
     parser.add_argument("--ip", metavar='', type=str, default='192.168.50.1')
     parser.add_argument("--port", metavar='', type=int, default=8080)
     args, _ = parser.parse_known_args()
