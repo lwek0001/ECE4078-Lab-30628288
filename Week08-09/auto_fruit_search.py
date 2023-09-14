@@ -114,10 +114,17 @@ def drive_to_point(waypoint, robot_pose):
     time_revolution = np.pi*baseline/(wheel_vel*scale)
     # turn towards the waypoint
     desired_pose = np.arctan2(waypoint[1]-float(robot_pose[1,0]),waypoint[0]-float(robot_pose[0,0]))
-    turn_time = abs((desired_pose-robot_pose[2,0])/(2*np.pi)*time_revolution)
-    print(turn_time)
+    new_pose_angle = desired_pose-float(robot_pose[2,0])
+    new_pose_angle = np.arctan2(np.sin(new_pose_angle),np.cos(new_pose_angle))
+    
+    turn_time = abs((new_pose_angle)/(2*np.pi)*time_revolution)
+    print("Rotating {:.2f} radians".format(new_pose_angle))
     print("Turning for {:.2f} seconds".format(turn_time))
-    ppi.set_velocity([0, 1], turning_tick=wheel_vel, time=turn_time)
+    if new_pose_angle > 0:
+        ppi.set_velocity([0, 1], turning_tick=wheel_vel, time=turn_time)    
+    elif new_pose_angle < 0:
+        ppi.set_velocity([0, -1], turning_tick=wheel_vel, time=turn_time)
+    
     
     # after turning, drive straight to the waypoint
     euclidean_distance = np.sqrt((waypoint[0]-robot_pose[0,0])**2 + (waypoint[1]-robot_pose[1,0])**2)
@@ -130,33 +137,19 @@ def drive_to_point(waypoint, robot_pose):
 
     print("Arrived at [{}, {}]".format(waypoint[0], waypoint[1]))
 
-    orientation = desired_pose 
+    orientation = np.mod(desired_pose, 2*np.pi)
 
     return(orientation)
     
 
 
 def get_robot_pose():
-    ####################################################
-    
-    # We STRONGLY RECOMMEND you to use your SLAM code from M2 here
-
-    # update the robot pose [x,y,theta]
-    
     robot_pose = EKF_slam.get_state_vector()
-    
-    ####################################################
-
     return robot_pose
 
 def set_robot_pose(updated_pose):
-    ####################################################
-    
-    # We STRONGLY RECOMMEND you to use your SLAM code from M2 here
-
-    # update the robot pose [x,y,theta]
     EKF_slam.set_state_vector(updated_pose)
-    ####################################################
+
 
     
 
