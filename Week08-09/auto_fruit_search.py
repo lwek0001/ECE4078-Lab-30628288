@@ -111,19 +111,29 @@ def drive_to_point(waypoint, robot_pose):
     # then drive straight to the way point
 
     wheel_vel = 30 # tick
-    
+    time_revolution = np.pi*baseline/(wheel_vel*scale)
     # turn towards the waypoint
-    turn_time = 0.0 # replace with your calculation
+    desired_pose = np.arctan2(waypoint[1]-float(robot_pose[1,0]),waypoint[0]-float(robot_pose[0,0]))
+    turn_time = abs((desired_pose-robot_pose[2,0])/(2*np.pi)*time_revolution)
+    print(turn_time)
     print("Turning for {:.2f} seconds".format(turn_time))
     ppi.set_velocity([0, 1], turning_tick=wheel_vel, time=turn_time)
     
     # after turning, drive straight to the waypoint
-    drive_time = 0.0 # replace with your calculation
+    euclidean_distance = np.sqrt((waypoint[0]-robot_pose[0,0])**2 + (waypoint[1]-robot_pose[1,0])**2)
+    wheel_vel = 50 # tick 
+    time_metre = 1/(wheel_vel*scale)
+    drive_time = abs(euclidean_distance * time_metre)
     print("Driving for {:.2f} seconds".format(drive_time))
     ppi.set_velocity([1, 0], tick=wheel_vel, time=drive_time)
     ####################################################
 
     print("Arrived at [{}, {}]".format(waypoint[0], waypoint[1]))
+
+    orientation = desired_pose 
+
+    return(orientation)
+    
 
 
 def get_robot_pose():
@@ -132,11 +142,23 @@ def get_robot_pose():
     # We STRONGLY RECOMMEND you to use your SLAM code from M2 here
 
     # update the robot pose [x,y,theta]
-    print()
-    # robot_pose = Robot.state
+    
+    robot_pose = EKF_slam.get_state_vector()
+    
     ####################################################
 
     return robot_pose
+
+def set_robot_pose(updated_pose):
+    ####################################################
+    
+    # We STRONGLY RECOMMEND you to use your SLAM code from M2 here
+
+    # update the robot pose [x,y,theta]
+    EKF_slam.set_state_vector(updated_pose)
+    ####################################################
+
+    
 
 # main loop
 if __name__ == "__main__":
@@ -144,7 +166,22 @@ if __name__ == "__main__":
     parser.add_argument("--map", type=str, default='M4_prac_map_full.txt') # change to 'M4_true_map_part.txt' for lv2&3
     parser.add_argument("--ip", metavar='', type=str, default='192.168.50.1')
     parser.add_argument("--port", metavar='', type=int, default=8080)
+    parser.add_argument("--calib_dir", type=str, default="calibration/param/")
     args, _ = parser.parse_known_args()
+    datadir = args.calib_dir
+    ip = args.ip
+    fileK = "{}intrinsic.txt".format(datadir)
+    camera_matrix = np.loadtxt(fileK, delimiter=',')
+    fileD = "{}distCoeffs.txt".format(datadir)
+    dist_coeffs = np.loadtxt(fileD, delimiter=',')
+    fileS = "{}scale.txt".format(datadir)
+    scale = np.loadtxt(fileS, delimiter=',')
+    if ip == 'localhost':
+        scale /= 2
+    fileB = "{}baseline.txt".format(datadir)
+    baseline = np.loadtxt(fileB, delimiter=',')
+    robot = Robot(baseline, scale, camera_matrix, dist_coeffs)
+    EKF_slam = EKF(robot)
 
     ppi = PenguinPi(args.ip,args.port)
 
@@ -179,7 +216,10 @@ if __name__ == "__main__":
 
         # robot drives to the waypoint
         waypoint = [x,y]
-        drive_to_point(waypoint,robot_pose)
+        new_pose_angle = drive_to_point(waypoint,robot_pose)
+        updated_pose = np.array([x,y,new_pose_angle]).reshape((3,1))
+        set_robot_pose(updated_pose)
+        robot_pose = get_robot_pose()
         print("Finished driving to waypoint: {}; New robot pose: {}".format(waypoint,robot_pose))
 
         # exit
