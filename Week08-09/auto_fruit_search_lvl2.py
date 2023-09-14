@@ -80,7 +80,7 @@ def print_target_fruits_pos(search_list, fruit_list, fruit_true_pos):
     @param fruit_list: list of target fruits
     @param fruit_true_pos: positions of the target fruits
     """
-
+    fruit_search_list_dict = dict()
     print("Search order:")
     n_fruit = 1
     for fruit in search_list:
@@ -90,8 +90,10 @@ def print_target_fruits_pos(search_list, fruit_list, fruit_true_pos):
                                                   fruit,
                                                   np.round(fruit_true_pos[i][0], 1),
                                                   np.round(fruit_true_pos[i][1], 1)))
+                fruit_search_list_dict[fruit] = [np.round(fruit_true_pos[i][0], 1), np.round(fruit_true_pos[i][1], 1)]
         n_fruit += 1
-
+    
+    return fruit_search_list_dict
 
 # Waypoint navigation
 # the robot automatically drives to a given [x,y] coordinate
@@ -148,39 +150,32 @@ def get_robot_pose():
 def set_robot_pose(updated_pose):
     EKF_slam.set_state_vector(updated_pose)
 
-# main loop
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser("Fruit searching")
-    parser.add_argument("--map", type=str, default='M4_prac_map_full.txt') # change to 'M4_true_map_part.txt' for lv2&3
-    parser.add_argument("--ip", metavar='', type=str, default='192.168.50.1')
-    parser.add_argument("--port", metavar='', type=int, default=8080)
-    parser.add_argument("--calib_dir", type=str, default="calibration/param/")
-    args, _ = parser.parse_known_args()
-    datadir = args.calib_dir
-    ip = args.ip
-    fileK = "{}intrinsic.txt".format(datadir)
-    camera_matrix = np.loadtxt(fileK, delimiter=',')
-    fileD = "{}distCoeffs.txt".format(datadir)
-    dist_coeffs = np.loadtxt(fileD, delimiter=',')
-    fileS = "{}scale.txt".format(datadir)
-    scale = np.loadtxt(fileS, delimiter=',')
-    if ip == 'localhost':
-        scale /= 2
-    fileB = "{}baseline.txt".format(datadir)
-    baseline = np.loadtxt(fileB, delimiter=',')
-    robot = Robot(baseline, scale, camera_matrix, dist_coeffs)
-    EKF_slam = EKF(robot)
+def automatic_movement(search_list, search_list_dict):
+    print("Starting to search for fruits in 3 seconds...")
+    time.sleep(3)
+    for i in search_list: 
+        coords_search = search_list_dict[i]
+        print("Fruit: {} Location: {}".format(i, coords_search))
+        robot_pose = get_robot_pose()
+        waypoint = coords_search
+        x = waypoint[0]
+        y = waypoint[1]
+        new_pose_angle = drive_to_point(waypoint,robot_pose)
+        updated_pose = np.array([x,y,new_pose_angle]).reshape((3,1))
+        set_robot_pose(updated_pose)
+        robot_pose = get_robot_pose()
+        print("Finished driving to waypoint: {}; New robot pose: {}".format(waypoint,robot_pose))
+        ppi.set_velocity([0, 0])
+        time.sleep(3)
+    print("Finished searching for all fruits, returning home...")
+    waypoint = [0,0]
+    new_pose_angle = drive_to_point(waypoint,robot_pose)
+    updated_pose = np.array([x,y,new_pose_angle]).reshape((3,1))
+    set_robot_pose(updated_pose)
+    robot_pose = get_robot_pose()
+    print("Finished driving to waypoint: {}; New robot pose: {}".format(waypoint,robot_pose))
 
-    ppi = PenguinPi(args.ip,args.port)
-
-    # read in the true map
-    fruits_list, fruits_true_pos, aruco_true_pos = read_true_map(args.map)
-    search_list = read_search_list()
-    print_target_fruits_pos(search_list, fruits_list, fruits_true_pos)
-
-    waypoint = [0.0,0.0]
-    robot_pose = [0.0,0.0,0.0]
-
+def manual_movement():
     # The following is only a skeleton code for semi-auto navigation
     while True:
         # enter the waypoints
@@ -213,5 +208,49 @@ if __name__ == "__main__":
         # exit
         ppi.set_velocity([0, 0])
         uInput = input("Add a new waypoint? [Y/N]")
-        if uInput == 'N':
+        if uInput == 'N' or uInput == 'n':
             break
+
+# main loop
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser("Fruit searching")
+    parser.add_argument("--map", type=str, default='M4_prac_map_full.txt') # change to 'M4_true_map_part.txt' for lv2&3
+    parser.add_argument("--ip", metavar='', type=str, default='192.168.50.1')
+    parser.add_argument("--port", metavar='', type=int, default=8080)
+    parser.add_argument("--calib_dir", type=str, default="calibration/param/")
+    args, _ = parser.parse_known_args()
+    datadir = args.calib_dir
+    ip = args.ip
+    fileK = "{}intrinsic.txt".format(datadir)
+    camera_matrix = np.loadtxt(fileK, delimiter=',')
+    fileD = "{}distCoeffs.txt".format(datadir)
+    dist_coeffs = np.loadtxt(fileD, delimiter=',')
+    fileS = "{}scale.txt".format(datadir)
+    scale = np.loadtxt(fileS, delimiter=',')
+    if ip == 'localhost':
+        scale /= 2
+    fileB = "{}baseline.txt".format(datadir)
+    baseline = np.loadtxt(fileB, delimiter=',')
+    robot = Robot(baseline, scale, camera_matrix, dist_coeffs)
+    EKF_slam = EKF(robot)
+
+    ppi = PenguinPi(args.ip,args.port)
+
+    # read in the true map
+    fruits_list, fruits_true_pos, aruco_true_pos = read_true_map(args.map)
+    search_list = read_search_list()
+    search_list_dict = print_target_fruits_pos(search_list, fruits_list, fruits_true_pos)
+
+    waypoint = [0.0,0.0]
+    robot_pose = [0.0,0.0,0.0]
+
+    driving_option = input("Do you want to drive the robot manually or automatically? [M/A]")
+    if driving_option == 'M' or driving_option == 'm':
+        manual_movement()
+    elif driving_option == 'A' or driving_option == 'a':
+        automatic_movement(search_list, search_list_dict)
+    else:
+        print("Please enter 'M' or 'A'.")
+
+
+    
