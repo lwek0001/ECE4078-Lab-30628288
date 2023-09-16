@@ -107,11 +107,6 @@ def drive_to_point(waypoint, robot_pose):
     fileB = "calibration/param/baseline.txt"
     baseline = np.loadtxt(fileB, delimiter=',')
     
-    ####################################################
-    # TODO: replace with your codes to make the robot drive to the waypoint
-    # One simple strategy is to first turn on the spot facing the waypoint,
-    # then drive straight to the way point
-
     wheel_vel = 30 # tick
     time_revolution = np.pi*baseline/(wheel_vel*scale)
     # turn towards the waypoint
@@ -135,10 +130,9 @@ def drive_to_point(waypoint, robot_pose):
     drive_time = abs(euclidean_distance * time_metre)
     print("Driving for {:.2f} seconds".format(drive_time))
     ppi.set_velocity([1, 0], tick=wheel_vel, time=drive_time)
-    ####################################################
+    
 
     print("Arrived at [{}, {}]".format(waypoint[0], waypoint[1]))
-
     orientation = np.mod(desired_pose, 2*np.pi)
 
     return(orientation)
