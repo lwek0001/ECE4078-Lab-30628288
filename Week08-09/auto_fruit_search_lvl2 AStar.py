@@ -159,7 +159,7 @@ def automatic_movement(search_list, search_list_dict):
         rx, ry = find_path(float(robot_pose[0])*100.0, float(robot_pose[1])*100.0, coords_search[0]*100.0, coords_search[1]*100.0, 10, 15, 150)
         # Reverse list and convert to m 
         print("Path found, driving to waypoint...")
-        time.sleep(3)
+        time.sleep(1)
         rx = rx[::-1]
         ry = ry[::-1]
         for i in range(len(rx)):
