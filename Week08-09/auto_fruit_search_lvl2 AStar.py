@@ -25,6 +25,11 @@ import util.measure as measure
 
 show_animation = True
 
+target_dimensions_dict = {'orange': [0.08,0.08,0.075], 'lemon': [0.055,0.055,0.075], 
+                              'lime': [0.055,0.055,0.075], 'tomato': [0.070,0.070,0.060], 
+                              'capsicum': [0.080,0.080,0.0100], 'potato': [0.0100,0.070,0.070], 
+                              'pumpkin': [0.090,0.090,0.0100], 'garlic': [0.060,0.060,0.080]}
+
 def read_true_map(fname):
     """Read the ground truth map and output the pose of the ArUco markers and 5 target fruits&vegs to search for
 
@@ -100,81 +105,14 @@ def print_target_fruits_pos(search_list, fruit_list, fruit_true_pos):
     
     return fruit_search_list_dict
 
-# Waypoint navigation
-# the robot automatically drives to a given [x,y] coordinate
-# note that this function requires your camera and wheel calibration parameters from M2, and the "util" folder from M1
-# fully automatic navigation:
-# try developing a path-finding algorithm that produces the waypoints automatically
-def drive_to_point(waypoint, robot_pose):
-    # imports camera / wheel calibration parameters 
-    fileS = "calibration/param/scale.txt"
-    scale = np.loadtxt(fileS, delimiter=',')
-    fileB = "calibration/param/baseline.txt"
-    baseline = np.loadtxt(fileB, delimiter=',')
-    
-    wheel_vel = 30 # tick
-    time_revolution = np.pi*baseline/(wheel_vel*scale)
-    # turn towards the waypoint
-    desired_pose = np.arctan2(waypoint[1]-float(robot_pose[1,0]),waypoint[0]-float(robot_pose[0,0]))
-    new_pose_angle = desired_pose-float(robot_pose[2,0])
-    new_pose_angle = np.arctan2(np.sin(new_pose_angle),np.cos(new_pose_angle))
-    
-    turn_time = abs((new_pose_angle)/(2*np.pi)*time_revolution)
-    print("Rotating {:.2f} radians".format(new_pose_angle))
-    print("Turning for {:.2f} seconds".format(turn_time))
-    if new_pose_angle > 0:
-        ppi.set_velocity([0, 1], turning_tick=wheel_vel, time=turn_time)    
-    elif new_pose_angle < 0:
-        ppi.set_velocity([0, -1], turning_tick=wheel_vel, time=turn_time)
-    
-    
-    # after turning, drive straight to the waypoint
-    euclidean_distance = np.sqrt((waypoint[0]-robot_pose[0,0])**2 + (waypoint[1]-robot_pose[1,0])**2)
-    wheel_vel = 50 # tick 
-    time_metre = 1/(wheel_vel*scale)
-    drive_time = abs(euclidean_distance * time_metre)
-    print("Driving for {:.2f} seconds".format(drive_time))
-    ppi.set_velocity([1, 0], tick=wheel_vel, time=drive_time)
-    
 
-    print("Arrived at [{}, {}]".format(waypoint[0], waypoint[1]))
-    orientation = np.mod(desired_pose, 2*np.pi)
-
-    return(orientation)
-    
 def get_robot_pose():
     robot_pose = EKF_slam.get_state_vector()
     return robot_pose
 
+
 def set_robot_pose(updated_pose):
     EKF_slam.set_state_vector(updated_pose)
-
-def automatic_movement(search_list, search_list_dict):
-    print("Starting to search for fruits in 3 seconds...")
-    time.sleep(3)
-    for i in search_list: 
-        coords_search = search_list_dict[i]
-        print("Fruit: {} Location: {}".format(i, coords_search))
-        robot_pose = get_robot_pose()
-        rx, ry = find_path(float(robot_pose[0])*100.0, float(robot_pose[1])*100.0, coords_search[0]*100.0, coords_search[1]*100.0, 10, 15, 150)
-        # Reverse list and convert to m 
-        print("Path found, driving to waypoint...")
-        time.sleep(3)
-        rx = rx[::-1]
-        ry = ry[::-1]
-        for i in range(len(rx)):
-            if i != len(rx)-1:
-                robot_pose = get_robot_pose()
-                x_m = rx[i+1]/100
-                y_m = ry[i+1]/100 
-                waypoint = [x_m, y_m]
-                new_pose_angle = drive_to_point(waypoint,robot_pose)
-                updated_pose = np.array([x_m,y_m,new_pose_angle]).reshape((3,1))
-                set_robot_pose(updated_pose)
-        robot_pose = get_robot_pose()
-        print("Finished driving to waypoint: {}; New robot pose: {}".format(waypoint,robot_pose))
-        ppi.set_velocity([0, 0])    
-
 
 
 def manual_movement():
@@ -213,36 +151,152 @@ def manual_movement():
         if uInput == 'N' or uInput == 'n':
             break
 
+
+def drive_to_point(waypoint, robot_pose):
+    # imports camera / wheel calibration parameters 
+    fileS = "calibration/param/scale.txt"
+    scale = np.loadtxt(fileS, delimiter=',')
+    fileB = "calibration/param/baseline.txt"
+    baseline = np.loadtxt(fileB, delimiter=',')
+    
+    wheel_vel = 30 # tick
+    time_revolution = np.pi*baseline/(wheel_vel*scale)
+    # turn towards the waypoint
+    desired_pose = np.arctan2(waypoint[1]-float(robot_pose[1,0]),waypoint[0]-float(robot_pose[0,0]))
+    new_pose_angle = desired_pose-float(robot_pose[2,0])
+    new_pose_angle = np.arctan2(np.sin(new_pose_angle),np.cos(new_pose_angle))
+    
+    turn_time = abs((new_pose_angle)/(2*np.pi)*time_revolution)
+    print("Rotating {:.2f} radians".format(new_pose_angle))
+    print("Turning for {:.2f} seconds".format(turn_time))
+    if new_pose_angle > 0:
+        ppi.set_velocity([0, 1], turning_tick=wheel_vel, time=turn_time)    
+    elif new_pose_angle < 0:
+        ppi.set_velocity([0, -1], turning_tick=wheel_vel, time=turn_time)
+    
+    
+    # after turning, drive straight to the waypoint
+    euclidean_distance = np.sqrt((waypoint[0]-robot_pose[0,0])**2 + (waypoint[1]-robot_pose[1,0])**2)
+    wheel_vel = 50 # tick 
+    time_metre = 1/(wheel_vel*scale)
+    drive_time = abs(euclidean_distance * time_metre)
+    print("Driving for {:.2f} seconds".format(drive_time))
+    ppi.set_velocity([1, 0], tick=wheel_vel, time=drive_time)
+    
+
+    print("Arrived at [{}, {}]".format(waypoint[0], waypoint[1]))
+    orientation = np.mod(desired_pose, 2*np.pi)
+
+    return(orientation)
+    
+
+def automatic_movement(search_list, search_list_dict):
+    print("Starting to search for fruits in 3 seconds...")
+    time.sleep(3)
+    for i in search_list: 
+        coords_search = search_list_dict[i]
+        print("Fruit: {} Location: {}".format(i, coords_search))
+        robot_pose = get_robot_pose()
+        rx, ry = find_path(float(robot_pose[0])*100.0, float(robot_pose[1])*100.0, coords_search[0]*100.0, coords_search[1]*100.0, 10, 15, 150)
+        # Reverse list and convert to m 
+        print("Path found, driving to waypoint...")
+        time.sleep(3)
+        rx = rx[::-1]
+        ry = ry[::-1]
+        for i in range(len(rx)):
+            if i != len(rx)-1:
+                robot_pose = get_robot_pose()
+                x_m = rx[i+1]/100
+                y_m = ry[i+1]/100 
+                waypoint = [x_m, y_m]
+                new_pose_angle = drive_to_point(waypoint,robot_pose)
+                updated_pose = np.array([x_m,y_m,new_pose_angle]).reshape((3,1))
+                set_robot_pose(updated_pose)
+        robot_pose = get_robot_pose()
+        print("Finished driving to waypoint: {}; New robot pose: {}".format(waypoint,robot_pose))
+        ppi.set_velocity([0, 0])    
+
 def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size): 
     print("Finding Path")
-    ox, oy = [], []
+    boundaries_x, boundaries_y = [], []
+    #Arena Boundaries 
     for i in range(-boundary_size, boundary_size):
-        ox.append(i)
-        oy.append(-boundary_size)
+        boundaries_x.append(i)
+        boundaries_y.append(-boundary_size)
     for i in range(-boundary_size, boundary_size):
-        ox.append(boundary_size)
-        oy.append(i)
+        boundaries_x.append(boundary_size)
+        boundaries_y.append(i)
     for i in range(-boundary_size, boundary_size):
-        ox.append(i)
-        oy.append(boundary_size)
+        boundaries_x.append(i)
+        boundaries_y.append(boundary_size)
     for i in range(-boundary_size, boundary_size):
-        ox.append(-boundary_size)
-        oy.append(i)
+        boundaries_x.append(-boundary_size)
+        boundaries_y.append(i)
 
+    arucos_x, arucos_y = [], []
+    # Aruco Markers 
+    aruco_true_pos = read_true_map('M4_prac_map_full.txt')[2]
+    for i in range(len(aruco_true_pos)):
+        for j in range(-5,5):
+            arucos_x.append(aruco_true_pos[i][0]*100+5)
+            arucos_y.append(aruco_true_pos[i][1]*100+j)
+        for j in range(-5,5):
+            arucos_x.append(aruco_true_pos[i][0]*100-5)
+            arucos_y.append(aruco_true_pos[i][1]*100+j)
+        for j in range(-5,6):
+            arucos_x.append(aruco_true_pos[i][0]*100+j)
+            arucos_y.append(aruco_true_pos[i][1]*100+5)
+        for j in range(-5,6):
+            arucos_x.append(aruco_true_pos[i][0]*100+j)
+            arucos_y.append(aruco_true_pos[i][1]*100-5)
+    
+    obs_fruit_x, obs_fruit_y = [], []
+    # Obstacle Fruits
+    for i in obstacle_list_dict.keys():
+        for j in range(-5,5):
+            obs_fruit_x.append(obstacle_list_dict[i][0]*100+5)
+            obs_fruit_y.append(obstacle_list_dict[i][1]*100+j)
+        for j in range(-5,5):
+            obs_fruit_x.append(obstacle_list_dict[i][0]*100-5)
+            obs_fruit_y.append(obstacle_list_dict[i][1]*100+j)
+        for j in range(-5,6):
+            obs_fruit_x.append(obstacle_list_dict[i][0]*100+j)
+            obs_fruit_y.append(obstacle_list_dict[i][1]*100+5)
+        for j in range(-5,6):
+            obs_fruit_x.append(obstacle_list_dict[i][0]*100+j)
+            obs_fruit_y.append(obstacle_list_dict[i][1]*100-5)
+    
     if show_animation:  # pragma: no cover
-        plt.plot(ox, oy, ".k")
+        plt.plot(boundaries_x, boundaries_y, ".k")
+        plt.plot(arucos_x, arucos_y, "bs")
+        plt.plot(obs_fruit_x, obs_fruit_y, "ro")
         plt.plot(sx, sy, "og")
         plt.plot(gx, gy, "xb")
         plt.grid(True)
         plt.axis("equal")
+        
+        
+        
 
+    ox, oy = [], []
+    ox.append(boundaries_x)
+    ox.append(arucos_x)
+    ox.append(obs_fruit_x)
+    oy.append(boundaries_y)
+    oy.append(arucos_y)
+    oy.append(obs_fruit_y)
+    ox = np.concatenate(ox)
+    oy = np.concatenate(oy)
     a_star = AStarPlanner(ox, oy, grid_size, robot_radius)
     rx, ry = a_star.planning(sx, sy, gx, gy)
 
     if show_animation:  # pragma: no cover
         plt.plot(rx, ry, "-r")
         plt.pause(0.001)
-        plt.show()
+        plt.show(block = False)
+        plt.pause(0.001)
+        
+        
     return rx, ry
 
 # main loop
@@ -274,6 +328,8 @@ if __name__ == "__main__":
     fruits_list, fruits_true_pos, aruco_true_pos = read_true_map(args.map)
     search_list = read_search_list()
     search_list_dict = print_target_fruits_pos(search_list, fruits_list, fruits_true_pos)
+    obstacle_list = list(set(fruits_list) - set(search_list))
+    obstacle_list_dict = print_target_fruits_pos(obstacle_list, fruits_list, fruits_true_pos)
 
     waypoint = [0.0,0.0]
     robot_pose = [0.0,0.0,0.0]
