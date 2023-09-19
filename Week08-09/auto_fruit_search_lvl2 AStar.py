@@ -301,6 +301,8 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size):
 
 def check_eDist(pose, waypoint):
     # find euclidean distance between two points (x, y only)
+    pose = np.array(pose).reshape(2, 1)
+    waypoint = np.array(waypoint).reshape(2, 1)
     dist = np.linalg.norm(pose - waypoint)
     if dist <= 0.5:
         return True
