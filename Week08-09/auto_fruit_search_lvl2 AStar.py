@@ -203,6 +203,7 @@ def automatic_movement(search_list, search_list_dict):
         time.sleep(3)
         rx = rx[::-1]
         ry = ry[::-1]
+        goal = [rx[-1], ry[-1]]
         for i in range(len(rx)):
             if i != len(rx)-1:
                 robot_pose = get_robot_pose()
@@ -212,6 +213,9 @@ def automatic_movement(search_list, search_list_dict):
                 new_pose_angle = drive_to_point(waypoint,robot_pose)
                 updated_pose = np.array([x_m,y_m,new_pose_angle]).reshape((3,1))
                 set_robot_pose(updated_pose)
+                if check_eDist(updated_pose[0:2], goal):
+                    # if robot is within 0.5m of 
+                    break
         robot_pose = get_robot_pose()
         print("Finished driving to waypoint: {}; New robot pose: {}".format(waypoint,robot_pose))
         ppi.set_velocity([0, 0])    
@@ -275,9 +279,6 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size):
         plt.grid(True)
         plt.axis("equal")
         
-        
-        
-
     ox, oy = [], []
     ox.append(boundaries_x)
     ox.append(arucos_x)
@@ -296,8 +297,13 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size):
         plt.show(block = False)
         plt.pause(0.001)
         
-        
     return rx, ry
+
+def check_eDist(pose, waypoint):
+    dist = np.linalg.norm(pose - waypoint)
+    if dist <= 0.5:
+        return True
+    return False
 
 # main loop
 if __name__ == "__main__":
