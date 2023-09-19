@@ -114,6 +114,36 @@ def get_robot_pose():
 def set_robot_pose(updated_pose):
     EKF_slam.set_state_vector(updated_pose)
 
+<<<<<<< HEAD
+def automatic_movement(search_list, search_list_dict):
+    print("Starting to search for fruits in 3 seconds...")
+    time.sleep(3)
+    for i in search_list: 
+        coords_search = search_list_dict[i]
+        print("Fruit: {} Location: {}".format(i, coords_search))
+        robot_pose = get_robot_pose()
+        rx, ry = find_path(float(robot_pose[0])*100.0, float(robot_pose[1])*100.0, coords_search[0]*100.0, coords_search[1]*100.0, 10, 15, 150)
+        # Reverse list and convert to m 
+        print("Path found, driving to waypoint...")
+        time.sleep(1)
+        rx = rx[::-1]
+        ry = ry[::-1]
+        for i in range(len(rx)):
+            if i != len(rx)-1:
+                robot_pose = get_robot_pose()
+                x_m = rx[i+1]/100
+                y_m = ry[i+1]/100 
+                waypoint = [x_m, y_m]
+                new_pose_angle = drive_to_point(waypoint,robot_pose)
+                updated_pose = np.array([x_m,y_m,new_pose_angle]).reshape((3,1))
+                set_robot_pose(updated_pose)
+        robot_pose = get_robot_pose()
+        print("Finished driving to waypoint: {}; New robot pose: {}".format(waypoint,robot_pose))
+        ppi.set_velocity([0, 0])    
+
+
+=======
+>>>>>>> 0348e771e840574f12fd2cf2786c49d166ef2167
 
 def manual_movement():
     # The following is only a skeleton code for semi-auto navigation
@@ -200,7 +230,7 @@ def automatic_movement(search_list, search_list_dict):
         rx, ry = find_path(float(robot_pose[0])*100.0, float(robot_pose[1])*100.0, coords_search[0]*100.0, coords_search[1]*100.0, 10, 15, 150)
         # Reverse list and convert to m 
         print("Path found, driving to waypoint...")
-        time.sleep(1)
+        time.sleep(3)
         rx = rx[::-1]
         ry = ry[::-1]
         for i in range(len(rx)):
