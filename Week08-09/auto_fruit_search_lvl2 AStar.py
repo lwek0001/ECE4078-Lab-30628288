@@ -8,6 +8,7 @@ import json
 import argparse
 import time
 import matplotlib.pyplot as plt
+from collections import defaultdict
 
 # import SLAM components
 sys.path.insert(0, "{}/slam".format(os.getcwd()))
@@ -93,15 +94,28 @@ def print_target_fruits_pos(search_list, fruit_list, fruit_true_pos):
     fruit_search_list_dict = dict()
     print("Search order:")
     n_fruit = 1
+
     for fruit in search_list:
+        counter = 1
         for i in range(len(fruit_list)): # there are 5 targets amongst 10 objects
             if fruit == fruit_list[i]:
+                #old_n_fruit += 1
+                
                 print('{}) {} at [{}, {}]'.format(n_fruit,
                                                   fruit,
                                                   np.round(fruit_true_pos[i][0], 1),
                                                   np.round(fruit_true_pos[i][1], 1)))
-                fruit_search_list_dict[fruit] = [np.round(fruit_true_pos[i][0], 1), np.round(fruit_true_pos[i][1], 1)]
-        n_fruit += 1
+                
+                list = [np.round(fruit_true_pos[i][0], 1), np.round(fruit_true_pos[i][1], 1)]
+                
+                n_fruit += 1
+                if counter == 1:
+                    fruit_search_list_dict[fruit] = list
+                else: 
+                    fruit_search_list_dict[fruit].append(list[0])
+                    fruit_search_list_dict[fruit].append(list[1])
+                counter += 1
+        # n_fruit += 1
     
     return fruit_search_list_dict
 
@@ -114,36 +128,42 @@ def get_robot_pose():
 def set_robot_pose(updated_pose):
     EKF_slam.set_state_vector(updated_pose)
 
-<<<<<<< HEAD
-def automatic_movement(search_list, search_list_dict):
-    print("Starting to search for fruits in 3 seconds...")
-    time.sleep(3)
-    for i in search_list: 
-        coords_search = search_list_dict[i]
-        print("Fruit: {} Location: {}".format(i, coords_search))
-        robot_pose = get_robot_pose()
-        rx, ry = find_path(float(robot_pose[0])*100.0, float(robot_pose[1])*100.0, coords_search[0]*100.0, coords_search[1]*100.0, 10, 15, 150)
-        # Reverse list and convert to m 
-        print("Path found, driving to waypoint...")
-        time.sleep(1)
-        rx = rx[::-1]
-        ry = ry[::-1]
-        for i in range(len(rx)):
-            if i != len(rx)-1:
-                robot_pose = get_robot_pose()
-                x_m = rx[i+1]/100
-                y_m = ry[i+1]/100 
-                waypoint = [x_m, y_m]
-                new_pose_angle = drive_to_point(waypoint,robot_pose)
-                updated_pose = np.array([x_m,y_m,new_pose_angle]).reshape((3,1))
-                set_robot_pose(updated_pose)
-        robot_pose = get_robot_pose()
-        print("Finished driving to waypoint: {}; New robot pose: {}".format(waypoint,robot_pose))
-        ppi.set_velocity([0, 0])    
+def check_eDist(pose, waypoint):
+    pose=np.array(pose).reshape(2,1)
+    waypoint=np.array(waypoint).reshape(2,1)
+    eDist = np.linalg.norm(pose-waypoint)
+    if eDist < 0.4:
+        return True
+    else:
+        return False
+
+# def automatic_movement(search_list, search_list_dict):
+#     print("Starting to search for fruits in 3 seconds...")
+#     time.sleep(3)
+#     for i in search_list: 
+#         coords_search = search_list_dict[i]
+#         print("Fruit: {} Location: {}".format(i, coords_search))
+#         robot_pose = get_robot_pose()
+#         rx, ry = find_path(float(robot_pose[0])*100.0, float(robot_pose[1])*100.0, coords_search[0]*100.0, coords_search[1]*100.0, 10, 15, 150)
+#         # Reverse list and convert to m 
+#         print("Path found, driving to waypoint...")
+#         time.sleep(1)
+#         rx = rx[::-1]
+#         ry = ry[::-1]
+#         for i in range(len(rx)):
+#             if i != len(rx)-1:
+#                 robot_pose = get_robot_pose()
+#                 x_m = rx[i+1]/100
+#                 y_m = ry[i+1]/100 
+#                 waypoint = [x_m, y_m]
+#                 new_pose_angle = drive_to_point(waypoint,robot_pose)
+#                 updated_pose = np.array([x_m,y_m,new_pose_angle]).reshape((3,1))
+#                 set_robot_pose(updated_pose)
+#         robot_pose = get_robot_pose()
+#         print("Finished driving to waypoint: {}; New robot pose: {}".format(waypoint,robot_pose))
+#         ppi.set_velocity([0, 0])    
 
 
-=======
->>>>>>> 0348e771e840574f12fd2cf2786c49d166ef2167
 
 def manual_movement():
     # The following is only a skeleton code for semi-auto navigation
@@ -233,6 +253,7 @@ def automatic_movement(search_list, search_list_dict):
         time.sleep(3)
         rx = rx[::-1]
         ry = ry[::-1]
+        goal = [rx[-1]/100.0, ry[-1]/100.0]
         for i in range(len(rx)):
             if i != len(rx)-1:
                 robot_pose = get_robot_pose()
@@ -242,8 +263,11 @@ def automatic_movement(search_list, search_list_dict):
                 new_pose_angle = drive_to_point(waypoint,robot_pose)
                 updated_pose = np.array([x_m,y_m,new_pose_angle]).reshape((3,1))
                 set_robot_pose(updated_pose)
+                if check_eDist(waypoint, goal):
+                    break
         robot_pose = get_robot_pose()
         print("Finished driving to waypoint: {}; New robot pose: {}".format(waypoint,robot_pose))
+        obstacle_list_dict[i] = coords_search
         ppi.set_velocity([0, 0])    
 
 def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size): 
@@ -267,34 +291,51 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size):
     # Aruco Markers 
     aruco_true_pos = read_true_map('M4_prac_map_full.txt')[2]
     for i in range(len(aruco_true_pos)):
-        for j in range(-5,5):
+        for j in range(-10,10):
             arucos_x.append(aruco_true_pos[i][0]*100+5)
             arucos_y.append(aruco_true_pos[i][1]*100+j)
-        for j in range(-5,5):
+        for j in range(-10,10):
             arucos_x.append(aruco_true_pos[i][0]*100-5)
             arucos_y.append(aruco_true_pos[i][1]*100+j)
-        for j in range(-5,6):
+        for j in range(-10,11):
             arucos_x.append(aruco_true_pos[i][0]*100+j)
             arucos_y.append(aruco_true_pos[i][1]*100+5)
-        for j in range(-5,6):
+        for j in range(-10,11):
             arucos_x.append(aruco_true_pos[i][0]*100+j)
             arucos_y.append(aruco_true_pos[i][1]*100-5)
     
     obs_fruit_x, obs_fruit_y = [], []
     # Obstacle Fruits
     for i in obstacle_list_dict.keys():
-        for j in range(-5,5):
+        for j in range(-10,10):
             obs_fruit_x.append(obstacle_list_dict[i][0]*100+5)
             obs_fruit_y.append(obstacle_list_dict[i][1]*100+j)
-        for j in range(-5,5):
+            if len(obstacle_list_dict[i]) > 2:
+                obs_fruit_x.append(obstacle_list_dict[i][2]*100+5)
+                obs_fruit_y.append(obstacle_list_dict[i][2+1]*100+j)
+        for j in range(-10,10):
             obs_fruit_x.append(obstacle_list_dict[i][0]*100-5)
             obs_fruit_y.append(obstacle_list_dict[i][1]*100+j)
-        for j in range(-5,6):
+            if len(obstacle_list_dict[i]) > 2:
+                
+                obs_fruit_x.append(obstacle_list_dict[i][2]*100-5)
+                obs_fruit_y.append(obstacle_list_dict[i][2+1]*100+j)
+        for j in range(-10,11):
             obs_fruit_x.append(obstacle_list_dict[i][0]*100+j)
             obs_fruit_y.append(obstacle_list_dict[i][1]*100+5)
-        for j in range(-5,6):
+            if len(obstacle_list_dict[i]) > 2:
+                
+                obs_fruit_x.append(obstacle_list_dict[i][2]*100+j)
+                obs_fruit_y.append(obstacle_list_dict[i][2+1]*100+5)
+        for j in range(-10,11):
             obs_fruit_x.append(obstacle_list_dict[i][0]*100+j)
             obs_fruit_y.append(obstacle_list_dict[i][1]*100-5)
+            if len(obstacle_list_dict[i]) > 2:
+               
+                obs_fruit_x.append(obstacle_list_dict[i][2]*100+j)
+                obs_fruit_y.append(obstacle_list_dict[i][2+1]*100-5)
+    
+    
     
     if show_animation:  # pragma: no cover
         plt.plot(boundaries_x, boundaries_y, ".k")
@@ -358,7 +399,8 @@ if __name__ == "__main__":
     fruits_list, fruits_true_pos, aruco_true_pos = read_true_map(args.map)
     search_list = read_search_list()
     search_list_dict = print_target_fruits_pos(search_list, fruits_list, fruits_true_pos)
-    obstacle_list = list(set(fruits_list) - set(search_list))
+    #obstacle_list = [x for x in fruits_list if not x in search_list or search_list.remove(x)]
+    obstacle_list = list(set(fruits_list)-set(search_list))
     obstacle_list_dict = print_target_fruits_pos(obstacle_list, fruits_list, fruits_true_pos)
 
     waypoint = [0.0,0.0]
