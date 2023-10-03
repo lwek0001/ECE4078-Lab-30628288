@@ -214,14 +214,14 @@ def drive_to_point(waypoint, robot_pose, drive_flag = True):
     return(orientation)
     
 
-def automatic_movement(search_list, search_list_dict, drive_flag):
+def automatic_movement(search_list, search_list_dict, drive_flag, marker_size=3, fruit_size=5):
     print("Starting to search for fruits in 3 seconds...")
     time.sleep(3)
     for i in search_list: 
         coords_search = search_list_dict[i]
         print("Fruit: {}, Location: {}".format(i, coords_search))
         robot_pose = get_robot_pose()
-        rx, ry = find_path(float(robot_pose[0])*100.0, float(robot_pose[1])*100.0, coords_search[0]*100.0, coords_search[1]*100.0, 10, 15, 150, i)
+        rx, ry = find_path(float(robot_pose[0])*100.0, float(robot_pose[1])*100.0, coords_search[0]*100.0, coords_search[1]*100.0, 10, 15, 150, i, marker_size, fruit_size)
         # Reverse list and convert to m 
         print("Path found, driving to waypoint...")
         time.sleep(3)
@@ -245,7 +245,7 @@ def automatic_movement(search_list, search_list_dict, drive_flag):
         if drive_flag:
             ppi.set_velocity([0, 0])    
 
-def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size, fruit_search): 
+def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size, fruit_search, marker_size, fruit_size): 
     print("Finding Path")
     boundaries_x, boundaries_y = [], []
     #Arena Boundaries 
@@ -265,7 +265,7 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size, fruit_sear
     arucos_x, arucos_y = [], []
     # Aruco Markers 
     aruco_true_pos = read_true_map('M4_prac_map_full.txt')[2]
-    marker_size = 3
+
     for i in range(len(aruco_true_pos)):
         for j in range(-marker_size,marker_size):
             arucos_x.append(aruco_true_pos[i][0]*100+marker_size)
@@ -282,7 +282,6 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size, fruit_sear
     
     obs_fruit_x, obs_fruit_y = [], []
     # Obstacle Fruits
-    fruit_size = 5
     for i in obstacle_list_dict.keys():
         for j in range(-fruit_size,fruit_size):
             obs_fruit_x.append(obstacle_list_dict[i][0]*100+fruit_size)
@@ -329,9 +328,6 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size, fruit_sear
                 non_obs_fruit_x.append(search_list_dict[i][0]*100+j)
                 non_obs_fruit_y.append(search_list_dict[i][1]*100-fruit_size)
 
-    
-    
-    
     if show_animation:  # pragma: no cover
         plt.plot(boundaries_x, boundaries_y, ".k")
         plt.plot(arucos_x, arucos_y, "bs")
@@ -342,9 +338,6 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size, fruit_sear
         plt.grid(True)
         plt.axis("equal")
         
-        
-        
-
     ox, oy = [], []
     ox.append(boundaries_x)
     ox.append(arucos_x)
@@ -404,16 +397,13 @@ if __name__ == "__main__":
     waypoint = [0.0,0.0]
     robot_pose = [0.0,0.0,0.0]
 
-    driving_option = input("Do you want to drive the robot manually or automatically? [M/A]")
+    driving_option,marker_threshold,fruit_threshold = input("manual or automatic drive? [M/A] ,marker threshold?, fruit_threshold? ").split(", ",3)
+   
     if driving_option == 'M' or driving_option == 'm':
         manual_movement()
     elif driving_option == 'A' or driving_option == 'a':
-        automatic_movement(search_list, search_list_dict, drive_flag=False)
+        automatic_movement(search_list, search_list_dict, drive_flag=False, marker_size=int(marker_threshold), fruit_size=int(fruit_threshold))
     else:
         print("Please enter 'M' or 'A'.")
 
-    
     plt.show()
-
-
-    
