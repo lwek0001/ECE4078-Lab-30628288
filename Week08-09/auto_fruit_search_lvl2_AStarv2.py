@@ -123,11 +123,15 @@ def print_target_fruits_pos(search_list, fruit_list, fruit_true_pos):
 def get_robot_pose():
     image = ppi.get_image()
     lms, ids = aruco_detector.detect_marker_positions(image)
-    for i in range(len(lms)):
-        lms[i].position = aruco_true_pos[lms[i].tag-1].reshape(2,1)
+    # for i in range(len(lms)):
+    #     lms[i].position = aruco_true_pos[lms[i].tag-1].reshape(2,1)
+
+
     EKF_slam.add_landmarks(lms)
     EKF_slam.update(lms)
     robot_pose = EKF_slam.get_state_vector()
+
+    
     return robot_pose
 
 

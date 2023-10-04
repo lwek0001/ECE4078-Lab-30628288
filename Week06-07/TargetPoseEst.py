@@ -122,7 +122,7 @@ def merge_estimations(target_pose_dict):
     print (f"Best K: {np.argmax(silhouette_avg)+2}")
     best_k = int(np.argmax(silhouette_avg)+2)
     
-    kmeans = KMeans(n_clusters=best_k, init='k-means++', random_state=42)
+    kmeans = KMeans(n_clusters=10, init='k-means++', random_state=42)
     y_kmeans = kmeans.fit_predict(X)
     
     plt.title('K-means clustering (k={})'.format(best_k))
