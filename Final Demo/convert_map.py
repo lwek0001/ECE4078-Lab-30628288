@@ -1,4 +1,5 @@
 import ast
+import json
 
 from SLAM_eval import parse_user_map
 
@@ -16,4 +17,4 @@ EstimateMap.update(fruits)
 print(EstimateMap)
 
 with open('EstimateMap.txt', 'w') as f:
-    write = f.write(str(EstimateMap))
+    json.dump(EstimateMap, f)

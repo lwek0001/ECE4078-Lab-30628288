@@ -48,8 +48,8 @@ def read_true_map(fname):
 
         # remove unique id of targets of the same type
         for key in gt_dict:
-            x = np.round(gt_dict[key]['x'], 1)
-            y = np.round(gt_dict[key]['y'], 1)
+            x = np.round(gt_dict[key]['x'], 2)
+            y = np.round(gt_dict[key]['y'], 2)
 
             if key.startswith('aruco'):
                 if key.startswith('aruco10'):
@@ -103,10 +103,10 @@ def print_target_fruits_pos(search_list, fruit_list, fruit_true_pos):
                 
                 print('{}) {} at [{}, {}]'.format(n_fruit,
                                                   fruit,
-                                                  np.round(fruit_true_pos[i][0], 1),
-                                                  np.round(fruit_true_pos[i][1], 1)))
+                                                  np.round(fruit_true_pos[i][0], 2),
+                                                  np.round(fruit_true_pos[i][1], 2)))
                 
-                list = [np.round(fruit_true_pos[i][0], 1), np.round(fruit_true_pos[i][1], 1)]
+                list = [np.round(fruit_true_pos[i][0], 2), np.round(fruit_true_pos[i][1], 2)]
                 
                 n_fruit += 1
                 if counter == 1:
@@ -128,11 +128,11 @@ def get_robot_pose():
 def set_robot_pose(updated_pose):
     EKF_slam.set_state_vector(updated_pose)
 
-def check_eDist(pose, waypoint):
+def check_eDist(pose, waypoint, threshold):
     pose=np.array(pose).reshape(2,1)
     waypoint=np.array(waypoint).reshape(2,1)
     eDist = np.linalg.norm(pose-waypoint)
-    if eDist < 0.4:
+    if eDist < threshold:
         return True
     else:
         return False
@@ -214,7 +214,7 @@ def drive_to_point(waypoint, robot_pose, drive_flag = True):
     return(orientation)
     
 
-def automatic_movement(search_list, search_list_dict, drive_flag, marker_size=3, fruit_size=5):
+def automatic_movement(search_list, search_list_dict, drive_flag, marker_size=3, fruit_size=5,  collision_threshold=0.35):
     print("Starting to search for fruits in 3 seconds...")
     time.sleep(3)
     for i in search_list: 
@@ -237,7 +237,7 @@ def automatic_movement(search_list, search_list_dict, drive_flag, marker_size=3,
                 new_pose_angle = drive_to_point(waypoint,robot_pose, drive_flag=drive_flag)
                 updated_pose = np.array([x_m,y_m,new_pose_angle]).reshape((3,1))
                 set_robot_pose(updated_pose)
-                if check_eDist(waypoint, goal):
+                if check_eDist(waypoint, goal, collision_threshold):
                     break
         robot_pose = get_robot_pose()
         print("Finished driving to waypoint: {}; New robot pose: {}".format(waypoint,robot_pose))
@@ -364,7 +364,7 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size, fruit_sear
 # main loop
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Fruit searching")
-    parser.add_argument("--map", type=str, default='map_full.txt') # change to 'M4_true_map_part.txt' for lv2&3
+    parser.add_argument("--map", type=str, default='EstimateMap.txt') # change to 'M4_true_map_part.txt' for lv2&3
     parser.add_argument("--ip", metavar='', type=str, default='192.168.50.1')
     parser.add_argument("--port", metavar='', type=int, default=8080)
     parser.add_argument("--calib_dir", type=str, default="calibration/param/")
@@ -397,12 +397,17 @@ if __name__ == "__main__":
     waypoint = [0.0,0.0]
     robot_pose = [0.0,0.0,0.0]
 
-    driving_option,marker_threshold,fruit_threshold = input("manual or automatic drive? [M/A] ,marker threshold?, fruit_threshold? ").split(", ",3)
+    driving_option = input("manual or automatic drive? [M/A]: ")
+    marker_threshold = input("marker threshold: ")
+    fruit_threshold = input("fruit threshold: ")
+    collision_threshold = input("collision threshold: ")
+    
+
    
     if driving_option == 'M' or driving_option == 'm':
         manual_movement()
     elif driving_option == 'A' or driving_option == 'a':
-        automatic_movement(search_list, search_list_dict, drive_flag=True, marker_size=int(marker_threshold), fruit_size=int(fruit_threshold))
+        automatic_movement(search_list, search_list_dict, drive_flag=False, marker_size=int(marker_threshold), fruit_size=int(fruit_threshold), collision_threshold = float(collision_threshold))
     else:
         print("Please enter 'M' or 'A'.")
 

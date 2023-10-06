@@ -94,10 +94,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("Matching the estimated map and the true map")
     parser.add_argument("groundtruth", type=str, help="The ground truth file name.")
     parser.add_argument("estimate", type=str, help="The estimate file name.")
-    args = parser.parse_args()
+    #args = parser.parse_args()
 
-    gt_aruco = parse_groundtruth(args.groundtruth)
-    us_aruco = parse_user_map(args.estimate)
+    # gt_aruco = parse_groundtruth(args.groundtruth)
+    # us_aruco = parse_user_map(args.estimate)
+
+    gt_aruco = parse_groundtruth('TrueMap.txt')
+    us_aruco = parse_user_map('lab_output/slam.txt')
 
     taglist, us_vec, gt_vec = match_aruco_points(us_aruco, gt_aruco)
 
