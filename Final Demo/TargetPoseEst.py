@@ -7,12 +7,19 @@ import cv2
 from YOLO.detector import Detector
 from sklearn.metrics import silhouette_score 
 from sklearn.cluster import KMeans
+from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
 
 # list of target fruits and vegs types
 # Make sure the names are the same as the ones used in your YOLO model
 TARGET_TYPES = ['orange', 'lemon', 'lime', 'tomato', 'capsicum', 'potato', 'pumpkin', 'garlic']
 
+def fruit_input():
+    fruit_count = {}
+
+    for i in range(len(TARGET_TYPES)):
+        fruit_count[TARGET_TYPES[i]] = (int(input(f'How many {TARGET_TYPES[i]}s are there? ')))
+    return fruit_count
 
 def estimate_pose(camera_matrix, obj_info, robot_pose):
     """
@@ -77,8 +84,75 @@ def estimate_pose(camera_matrix, obj_info, robot_pose):
     #print(f'target_pose: {target_pose}')
     return target_pose
 
+def k_means_clustering(dataset, fruit_count, plot = True):
+    kmeans = KMeans(n_clusters=fruit_count, init='k-means++', random_state=42)
+    y_kmeans = kmeans.fit_predict(dataset)
+    if plot == True:
+        plt.title('K-means clustering (k={})'.format(fruit_count))
+        plt.scatter(dataset[:, 0], dataset[:, 1], c=y_kmeans)
+        plt.scatter(kmeans.cluster_centers_[:, 0],kmeans.cluster_centers_[:, 1], s=100, c='red')
+        plt.xlabel('Feature 1')
+        plt.ylabel('Feature 2')
+        plt.show()
+    cluster_centre = kmeans.cluster_centers_
+    return cluster_centre
 
-def merge_estimations(target_pose_dict):
+def dbscan_clustering(dataset, eps = 0.25, min_samples = 2, plot = True):
+    db = DBSCAN(eps = eps, min_samples = min_samples).fit(dataset)
+    labels = db.labels_
+    n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+    n_noise_ = list(labels).count(-1)
+    print("Estimated number of clusters: %d" % n_clusters_)
+    print("Estimated number of noise points: %d" % n_noise_)
+
+    unique_labels = set(labels)
+    core_samples_mask = np.zeros_like(labels, dtype=bool)
+    core_samples_mask[db.core_sample_indices_] = True
+    colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
+    cluster_centre = np.zeros([n_clusters_,2])
+    i = 0
+    if plot == True:
+        for k, col in zip(unique_labels, colors):
+            if k == -1:
+                # Black used for noise.
+                col = [0, 0, 0, 1]
+            class_member_mask = labels == k
+
+            xy = dataset[class_member_mask & core_samples_mask] 
+            plt.plot(
+                xy[:, 0],
+                xy[:, 1],
+                "o",
+                markerfacecolor=tuple(col),
+                markeredgecolor="k",
+                markersize=6,  
+            )
+            if k != -1: 
+                cluster_centre[i,:] = np.mean(xy, axis=0)
+                plt.plot(
+                    cluster_centre[i, 0],
+                    cluster_centre[i, 1],
+                    "o",
+                    markerfacecolor=tuple(col),
+                    markeredgecolor="k",
+                    markersize=14,
+                    
+                )
+                i += 1
+            xy = dataset[class_member_mask & ~core_samples_mask]
+            plt.plot(
+                xy[:, 0],
+                xy[:, 1],
+                "o",
+                markerfacecolor=tuple(col),
+                markeredgecolor="k",
+                markersize=3,
+            )   
+        plt.title(f"Estimated number of clusters: {n_clusters_}")
+        plt.show()
+    return cluster_centre
+
+def merge_estimations(target_pose_dict, method, fruit_count, eps, min_samples, plot = True):
     """
     function:
         merge estimations of the same target
@@ -88,9 +162,6 @@ def merge_estimations(target_pose_dict):
         target_est: dict, target pose estimations after merging
     """
     target_est = {}
-
-    ######### Replace with your codes #########
-    
     key = []
     x = np.zeros(len(target_pose_dict))
     y = np.zeros(len(target_pose_dict))
@@ -101,59 +172,30 @@ def merge_estimations(target_pose_dict):
         key.append(k)
         i += 1 
     X = np.array(list(zip(x, y))).reshape(len(x), 2)
-    print(key)
-    # plt.plot()
-    # plt.xlim([-2, 2])
-    # plt.ylim([-2, 2])
-    # plt.title('Dataset')
-    # plt.scatter(x, y)
-    # plt.show()
-    Sum_of_squared_distances = []
-    print(X)
-    silhouette_avg = []
-    K = range(2,len(target_pose_dict)-1)
-    for k in K:
-        km = KMeans(n_clusters=k)
-        km = km.fit(X)
-        Sum_of_squared_distances.append(km.inertia_)
-        score = silhouette_score(X, km.labels_, metric='euclidean')
-        silhouette_avg.append(score)
+
+    fruit_split_dict = {}
+    for i in TARGET_TYPES:
+        fruit_coord = []
+        for j in range(len(X)):
+            if key[j][:key[j].index("_")] == i:
+                fruit_coord.append(X[j,:])
+        fruit_split_dict[i] = fruit_coord
+            
+    
+    for i in TARGET_TYPES:
+        dataset = np.array(fruit_split_dict[i])
+        if method == 1: #Kmeans clustering
+            print("K-means clustering")
+            cluster_centre = k_means_clustering(dataset, fruit_count[i], plot)
+
+        elif method == 2: #DBSCAN clustering
+            print("DBSCAN clustering")
+            cluster_centre = dbscan_clustering(dataset, eps, min_samples, plot)
         
-    print (f"Best K: {np.argmax(silhouette_avg)+2}")
-    best_k = int(np.argmax(silhouette_avg)+2)
+        for j in range(len(cluster_centre)):
+            target_est[i + "_" + str(j)] = {'x': cluster_centre[j,0], 'y': cluster_centre[j,1]}
     
-    kmeans = KMeans(n_clusters=10, init='k-means++', random_state=42)
-    y_kmeans = kmeans.fit_predict(X)
-    
-    plt.title('K-means clustering (k={})'.format(best_k))
-    plt.scatter(X[:, 0], X[:, 1], c=y_kmeans)
-    plt.scatter(kmeans.cluster_centers_[:, 0],kmeans.cluster_centers_[:, 1], s=100, c='red')
-    plt.xlabel('Feature 1')
-    plt.ylabel('Feature 2')
-    plt.show()
 
-    dist_to_new_cluster = np.zeros([len(key),len(kmeans.cluster_centers_)])
-
-    for i in range(len(kmeans.cluster_centers_)):
-        for j in range(len(key)):
-            dist_to_new_cluster[j,i] = np.linalg.norm([x[j],y[j]] - kmeans.cluster_centers_[i,:])
-
-    idx = np.argmin(dist_to_new_cluster, axis = 0)
-
-    for i in range(len(idx)):
-        current_fruit = key[idx[i]][:key[idx[i]].index("_")]
-        if i == 0 or current_fruit != prev_fruit:
-            fruit_count = 0
-        target_est[f'{current_fruit}_{fruit_count}'] = {
-            'y' : round(kmeans.cluster_centers_[i,1],5),
-            'x' : round(kmeans.cluster_centers_[i,0],5)
-        }
-        prev_fruit = key[idx[i]][:key[idx[i]].index("_")]
-        fruit_count += 1
-    
-        
-    #########
-   
     return target_est
 
 
@@ -199,7 +241,20 @@ if __name__ == "__main__":
     
     
     # merge the estimations of the targets so that there are at most 3 estimations of each target type    target_est = {}
-    target_est = merge_estimations(target_pose_dict)
+    fruit_count = fruit_input()
+    plot = input("Plot? (y/n): ")
+    if plot == "y" or plot == "Y":
+        plot = True 
+    else:
+        plot = False
+    method = input("K-means or DBSCAN? (1/2): ")
+    if method == "2":
+        eps = float(input("Enter eps: "))
+        min_samples = int(input("Enter min_samples: "))
+        target_est = merge_estimations(target_pose_dict, int(method), fruit_count, eps, min_samples, plot)
+    else:
+        target_est = merge_estimations(target_pose_dict, int(method), fruit_count, 0, 0, plot)
+    
     print(target_est)
     # save target pose estimations
     with open(f'{script_dir}/lab_output/targets.txt', 'w') as fo:

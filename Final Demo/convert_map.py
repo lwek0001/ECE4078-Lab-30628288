@@ -1,4 +1,3 @@
-import numpy as np
 import ast
 
 from SLAM_eval import parse_user_map
@@ -16,5 +15,5 @@ for i in range(1,11):
 EstimateMap.update(fruits)
 print(EstimateMap)
 
-with open('test.txt', 'w') as f:
+with open('EstimateMap.txt', 'w') as f:
     write = f.write(str(EstimateMap))

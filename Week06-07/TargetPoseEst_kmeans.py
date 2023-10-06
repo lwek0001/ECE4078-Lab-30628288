@@ -5,8 +5,8 @@ import os
 import ast
 import cv2
 from YOLO.detector import Detector
-
-from sklearn.cluster import DBSCAN
+from sklearn.metrics import silhouette_score 
+from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 
 # list of target fruits and vegs types
@@ -36,11 +36,6 @@ def estimate_pose(camera_matrix, obj_info, robot_pose):
 
     # there are 8 possible types of fruits and vegs
     ######### Replace with your codes #########
-    
-    # target_dimensions_dict = {'orange': [0.080,0.080,0.075], 'lemon': [0.074,0.049,0.051], 
-    #                           'lime': [0.048,0.050,0.075], 'tomato': [0.070,0.069,0.069], 
-    #                           'capsicum': [0.094,0.068,0.068], 'potato': [0.065,0.068,0.095], 
-    #                           'pumpkin': [0.082,0.087,0.086], 'garlic': [0.075,0.066,0.064]}
     
     target_dimensions_dict = {'orange': [0.08,0.08,0.075], 'lemon': [0.055,0.055,0.075], 
                               'lime': [0.055,0.055,0.075], 'tomato': [0.070,0.070,0.060], 
@@ -107,92 +102,58 @@ def merge_estimations(target_pose_dict):
         i += 1 
     X = np.array(list(zip(x, y))).reshape(len(x), 2)
     print(key)
-    plt.plot()
-    plt.xlim([-2, 2])
-    plt.ylim([-2, 2])
-    plt.title('Dataset')
-    plt.scatter(x, y)
-    plt.show()
+    # plt.plot()
+    # plt.xlim([-2, 2])
+    # plt.ylim([-2, 2])
+    # plt.title('Dataset')
+    # plt.scatter(x, y)
+    # plt.show()
+    Sum_of_squared_distances = []
+    print(X)
+    silhouette_avg = []
+    K = range(2,len(target_pose_dict)-1)
+    for k in K:
+        km = KMeans(n_clusters=k)
+        km = km.fit(X)
+        Sum_of_squared_distances.append(km.inertia_)
+        score = silhouette_score(X, km.labels_, metric='euclidean')
+        silhouette_avg.append(score)
+        
+    print (f"Best K: {np.argmax(silhouette_avg)+2}")
+    best_k = int(np.argmax(silhouette_avg)+2)
     
-    db = DBSCAN(eps=0.25, min_samples=2).fit(X)
-    labels = db.labels_
-    print(labels)
-    n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
-    n_noise_ = list(labels).count(-1)
-
-    print("Estimated number of clusters: %d" % n_clusters_)
-    print("Estimated number of noise points: %d" % n_noise_)
+    kmeans = KMeans(n_clusters=10, init='k-means++', random_state=42)
+    y_kmeans = kmeans.fit_predict(X)
     
-    unique_labels = set(labels)
-    core_samples_mask = np.zeros_like(labels, dtype=bool)
-    core_samples_mask[db.core_sample_indices_] = True
-
-    colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
-    cluster_centre = np.zeros([n_clusters_,2])
-    i = 0
-    for k, col in zip(unique_labels, colors):
-        
-        if k == -1:
-            # Black used for noise.
-            col = [0, 0, 0, 1]
-            
-
-        class_member_mask = labels == k
-
-        xy = X[class_member_mask & core_samples_mask] 
-        plt.plot(
-            xy[:, 0],
-            xy[:, 1],
-            "o",
-            markerfacecolor=tuple(col),
-            markeredgecolor="k",
-            markersize=6,
-            
-        )
-        if k != -1: 
-            cluster_centre[i,:] = np.mean(xy, axis=0)
-            plt.plot(
-                cluster_centre[i, 0],
-                cluster_centre[i, 1],
-                "o",
-                markerfacecolor=tuple(col),
-                markeredgecolor="k",
-                markersize=14,
-                
-            )
-            i += 1
-        
-        xy = X[class_member_mask & ~core_samples_mask]
-        plt.plot(
-            xy[:, 0],
-            xy[:, 1],
-            "o",
-            markerfacecolor=tuple(col),
-            markeredgecolor="k",
-            markersize=3,
-        )   
-        
-    ########
-    plt.title(f"Estimated number of clusters: {n_clusters_}")
+    plt.title('K-means clustering (k={})'.format(best_k))
+    plt.scatter(X[:, 0], X[:, 1], c=y_kmeans)
+    plt.scatter(kmeans.cluster_centers_[:, 0],kmeans.cluster_centers_[:, 1], s=100, c='red')
+    plt.xlabel('Feature 1')
+    plt.ylabel('Feature 2')
     plt.show()
 
-    dist_to_new_cluster = np.zeros([len(key),len(cluster_centre)])
+    dist_to_new_cluster = np.zeros([len(key),len(kmeans.cluster_centers_)])
 
-    for i in range(len(cluster_centre)):
+    for i in range(len(kmeans.cluster_centers_)):
         for j in range(len(key)):
-            dist_to_new_cluster[j,i] = np.linalg.norm([x[j],y[j]] - cluster_centre[i,:])
+            dist_to_new_cluster[j,i] = np.linalg.norm([x[j],y[j]] - kmeans.cluster_centers_[i,:])
 
     idx = np.argmin(dist_to_new_cluster, axis = 0)
-    fruit_counter = {}
+
     for i in range(len(idx)):
         current_fruit = key[idx[i]][:key[idx[i]].index("_")]
-        if fruit_counter.get(current_fruit) == None:
-            fruit_counter[current_fruit] = 0
-        target_est[f'{current_fruit}_{fruit_counter.get(current_fruit)}'] = {
-            'y' : round(cluster_centre[i,1],5),
-            'x' : round(cluster_centre[i,0],5)
+        if i == 0 or current_fruit != prev_fruit:
+            fruit_count = 0
+        target_est[f'{current_fruit}_{fruit_count}'] = {
+            'y' : round(kmeans.cluster_centers_[i,1],5),
+            'x' : round(kmeans.cluster_centers_[i,0],5)
         }
-        fruit_counter[current_fruit] = fruit_counter.get(current_fruit, 0) + 1
+        prev_fruit = key[idx[i]][:key[idx[i]].index("_")]
+        fruit_count += 1
+    
+        
+    #########
+   
     return target_est
 
 
@@ -206,7 +167,8 @@ if __name__ == "__main__":
 
     # init YOLO model
     model_path = f'{script_dir}/YOLO/model/yolov8_model.pt'
-    #Good YOLO models: 4, 6 (really good), 7
+    #Good YOLO models: 4, 6 (really good), 7 
+    #Update: YOLO Model 6 is now base model 
     yolo = Detector(model_path)
 
     # create a dictionary of all the saved images with their corresponding robot pose
