@@ -213,15 +213,24 @@ def drive_to_point(waypoint, robot_pose, drive_flag = True):
 
     return(orientation)
     
+def goal_radius(gx, gy, radius, robot_pose):
+    theta = np.linspace(0, 2*np.pi, 100)
+    x = gx + radius*np.cos(theta)
+    y = gy + radius*np.sin(theta)
+    idx = np.argmin(np.sqrt((x-robot_pose[0])**2 + (y-robot_pose[1])**2))
+    print("Goal radius: [{}, {}]".format(x[idx], y[idx]))
+    return([x[idx], y[idx]])
 
-def automatic_movement(search_list, search_list_dict, drive_flag, marker_size=3, fruit_size=5,  collision_threshold=0.35):
+
+def automatic_movement(search_list, search_list_dict, drive_flag, marker_size=3, fruit_size=5,  radius_threshold=35.0):
     print("Starting to search for fruits in 3 seconds...")
     time.sleep(3)
     for i in search_list: 
         coords_search = search_list_dict[i]
+        
         print("Fruit: {}, Location: {}".format(i, coords_search))
         robot_pose = get_robot_pose()
-        rx, ry = find_path(float(robot_pose[0])*100.0, float(robot_pose[1])*100.0, coords_search[0]*100.0, coords_search[1]*100.0, 10, 15, 150, i, marker_size, fruit_size)
+        rx, ry = find_path(float(robot_pose[0])*100.0, float(robot_pose[1])*100.0, coords_search[0]*100.0, coords_search[1]*100.0, 10, 15, 150, i, marker_size, fruit_size, radius_threshold)
         # Reverse list and convert to m 
         print("Path found, driving to waypoint...")
         time.sleep(3)
@@ -237,15 +246,14 @@ def automatic_movement(search_list, search_list_dict, drive_flag, marker_size=3,
                 new_pose_angle = drive_to_point(waypoint,robot_pose, drive_flag=drive_flag)
                 updated_pose = np.array([x_m,y_m,new_pose_angle]).reshape((3,1))
                 set_robot_pose(updated_pose)
-                if check_eDist(waypoint, goal, collision_threshold):
-                    break
+
         robot_pose = get_robot_pose()
         print("Finished driving to waypoint: {}; New robot pose: {}".format(waypoint,robot_pose))
         obstacle_list_dict[i] = coords_search
         if drive_flag:
             ppi.set_velocity([0, 0])    
 
-def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size, fruit_search, marker_size, fruit_size): 
+def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size, fruit_search, marker_size, fruit_size, radius_threshold): 
     print("Finding Path")
     boundaries_x, boundaries_y = [], []
     #Arena Boundaries 
@@ -350,7 +358,8 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size, fruit_sear
     ox = np.concatenate(ox)
     oy = np.concatenate(oy)
     a_star = AStarPlanner(ox, oy, grid_size, robot_radius)
-    rx, ry = a_star.planning(sx, sy, gx, gy)
+    updated_goal = goal_radius(gx, gy, radius_threshold, robot_pose)
+    rx, ry = a_star.planning(sx, sy, updated_goal[0], updated_goal[1])
 
     if show_animation:  # pragma: no cover
         plt.plot(rx, ry, "-r")
@@ -400,14 +409,15 @@ if __name__ == "__main__":
     driving_option = input("manual or automatic drive? [M/A]: ")
     marker_threshold = input("marker threshold: ")
     fruit_threshold = input("fruit threshold: ")
-    collision_threshold = input("collision threshold: ")
+    radius_threshold = input("radius threshold: ")
+    
     
 
    
     if driving_option == 'M' or driving_option == 'm':
         manual_movement()
     elif driving_option == 'A' or driving_option == 'a':
-        automatic_movement(search_list, search_list_dict, drive_flag=False, marker_size=int(marker_threshold), fruit_size=int(fruit_threshold), collision_threshold = float(collision_threshold))
+        automatic_movement(search_list, search_list_dict, drive_flag=False, marker_size=int(marker_threshold), fruit_size=int(fruit_threshold), radius_threshold = float(radius_threshold))
     else:
         print("Please enter 'M' or 'A'.")
 
