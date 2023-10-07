@@ -114,7 +114,7 @@ def merge_estimations(target_pose_dict):
     plt.scatter(x, y)
     plt.show()
     
-    db = DBSCAN(eps=0.1, min_samples=3).fit(X)
+    db = DBSCAN(eps=0.25, min_samples=1).fit(X)
     labels = db.labels_
     print(labels)
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
