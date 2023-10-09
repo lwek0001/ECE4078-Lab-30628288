@@ -10,7 +10,7 @@ See Wikipedia article (https://en.wikipedia.org/wiki/A*_search_algorithm)
 """
 
 import math
-
+import numpy as np
 import matplotlib.pyplot as plt
 
 show_animation = True
@@ -48,7 +48,7 @@ class AStarPlanner:
             return str(self.x) + "," + str(self.y) + "," + str(
                 self.cost) + "," + str(self.parent_index)
 
-    def planning(self, sx, sy, gx, gy):
+    def planning(self, sx, sy, gx, gy, radius):
         """
         A star path search
 
@@ -94,10 +94,21 @@ class AStarPlanner:
                 if len(closed_set.keys()) % 10 == 0:
                     plt.pause(0.001)
 
-            if current.x == goal_node.x and current.y == goal_node.y:
+            # if current.x == goal_node.x and current.y == goal_node.y:
+            #     print("Find goal")
+            #     goal_node.parent_index = current.parent_index
+            #     goal_node.cost = current.cost
+            #     break
+            convert_goal_x = self.calc_grid_position(goal_node.x, self.min_x)
+            convert_goal_y = self.calc_grid_position(goal_node.y, self.min_y)
+            convert_current_x = self.calc_grid_position(current.x, self.min_x)
+            convert_current_y = self.calc_grid_position(current.y, self.min_y)
+            if np.sqrt(((convert_goal_x-convert_current_x)**2 + (convert_goal_y-convert_current_y)**2)) < radius:
                 print("Find goal")
                 goal_node.parent_index = current.parent_index
                 goal_node.cost = current.cost
+                goal_node.x = current.x
+                goal_node.y = current.y
                 break
 
             # Remove the item from the open set
@@ -254,7 +265,7 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size):
         plt.axis("equal")
 
     a_star = AStarPlanner(ox, oy, grid_size, robot_radius)
-    rx, ry = a_star.planning(sx, sy, gx, gy)
+    rx, ry = a_star.planning(sx, sy, gx, gy, 50)
 
     if show_animation:  # pragma: no cover
         plt.plot(rx, ry, "-r")
@@ -263,7 +274,7 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size):
     return rx, ry
 
 def main():
-    rx, ry = find_path(0.0,0.0,-60.0,70.0,10,15,150)
+    rx, ry = find_path(0.0,0.0,-60.0,70.0,10,15,60)
     rx = rx[::-1]
     ry = ry[::-1]
     print(rx, ry)

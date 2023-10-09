@@ -1,0 +1,24 @@
+Final Milestone Marking Instructions
+
+1. Teleoperate Robot for SLAM 
+
+python operate.py --ip 192.168.50.1 --port 8080
+
+RUN SLAM: Press Enter to Start, S to save map
+
+2. Teleoperate Robot for Pose Estimates 
+
+press P for YOLO Detector 
+press N to save pose 
+
+3. Merge Estimates 
+
+run TargetPoseEst.py 
+
+4. Transform Map 
+
+run convert_map.py 
+
+5. Navigation
+
+run auto_navigation.py
