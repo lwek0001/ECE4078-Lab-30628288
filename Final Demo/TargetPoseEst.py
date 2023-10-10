@@ -44,18 +44,22 @@ def estimate_pose(camera_matrix, obj_info, robot_pose):
     # there are 8 possible types of fruits and vegs
     ######### Replace with your codes #########
     
-    target_dimensions_dict = {'orange': [0.08,0.08,0.075], 'lemon': [0.055,0.055,0.075], 
-                              'lime': [0.055,0.055,0.075], 'tomato': [0.070,0.070,0.060], 
-                              'capsicum': [0.080,0.080,0.0100], 'potato': [0.0100,0.070,0.070], 
-                              'pumpkin': [0.090,0.090,0.0100], 'garlic': [0.060,0.060,0.080]}
+    # target_dimensions_dict = {'orange': [0.08,0.08,0.075], 'lemon': [0.055,0.055,0.075], 
+    #                           'lime': [0.055,0.055,0.075], 'tomato': [0.070,0.070,0.060], 
+    #                           'capsicum': [0.080,0.080,0.0100], 'potato': [0.0100,0.070,0.070], 
+    #                           'pumpkin': [0.090,0.090,0.0100], 'garlic': [0.060,0.060,0.080]}
     
+    target_dimensions_dict = {'orange': [0.073,0.074,0.074], 'lemon': [0.074,0.049,0.051], 
+                              'lime': [0.048,0.050,0.075], 'tomato': [0.070,0.069,0.069], 
+                              'capsicum': [0.094,0.068,0.068], 'potato': [0.065,0.068,0.095], 
+                              'pumpkin': [0.082,0.087,0.086], 'garlic': [0.075,0.066,0.064]}
     
     #########
 
     # estimate target pose using bounding box and robot pose
     target_class = obj_info[0]     # get predicted target label of the box
     target_box = obj_info[1]       # get bounding box measures: [x,y,width,height]
-    true_height = target_dimensions_dict[target_class][2]   # look up true height of by class label
+    true_height = target_dimensions_dict[target_class][0]   # look up true height of by class label
 
     # compute pose of the target based on bounding box info, true object height, and robot's pose
     pixel_height = target_box[3]

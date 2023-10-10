@@ -358,16 +358,14 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size, fruit_sear
     ox = np.concatenate(ox)
     oy = np.concatenate(oy)
     a_star = AStarPlanner(ox, oy, grid_size, robot_radius)
-    updated_goal = goal_radius(gx, gy, radius_threshold, robot_pose)
-    rx, ry = a_star.planning(sx, sy, updated_goal[0], updated_goal[1])
+    rx, ry = a_star.planning(sx, sy, gx, gy, radius_threshold)
 
     if show_animation:  # pragma: no cover
         plt.plot(rx, ry, "-r")
         plt.pause(0.001)
         plt.show(block = False)
         plt.pause(0.001)
-        
-        
+
     return rx, ry
 
 # main loop
