@@ -13,7 +13,7 @@ from collections import defaultdict
 # import SLAM components
 sys.path.insert(0, "{}/slam".format(os.getcwd()))
 from slam.ekf import EKF
-from slam.robot import Robot
+from slam.robotv2 import Robot
 import slam.aruco_detector as aruco
 
 # import Path Planning 
@@ -371,7 +371,7 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size, fruit_sear
 # main loop
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Fruit searching")
-    parser.add_argument("--map", type=str, default='EstimateMap.txt') # change to 'M4_true_map_part.txt' for lv2&3
+    parser.add_argument("--map", type=str, default='TrueMap.txt') # change to 'M4_true_map_part.txt' for lv2&3
     parser.add_argument("--ip", metavar='', type=str, default='192.168.50.1')
     parser.add_argument("--port", metavar='', type=int, default=8080)
     parser.add_argument("--calib_dir", type=str, default="calibration/param/")
@@ -404,12 +404,12 @@ if __name__ == "__main__":
     waypoint = [0.0,0.0]
     robot_pose = [0.0,0.0,0.0]
 
-    driving_option = input("manual or automatic drive? [M/A]: ")
-    marker_threshold = input("marker threshold: ")
-    fruit_threshold = input("fruit threshold: ")
-    radius_threshold = input("radius threshold: ")
+    # driving_option = input("manual or automatic drive? [M/A]: ")
+    # marker_threshold = input("marker threshold: ")
+    # fruit_threshold = input("fruit threshold: ")
+    # radius_threshold = input("radius threshold: ")
     
-    
+    driving_option, marker_threshold, fruit_threshold, radius_threshold = input("manual or automatic drive? [M/A] ,marker threshold?, fruit_threshold?, radius_threshold? ").split(", ",4)
 
    
     if driving_option == 'M' or driving_option == 'm':

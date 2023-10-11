@@ -23,6 +23,8 @@ import slam.aruco_detector as aruco
 # import YOLO components 
 from YOLO.detector import Detector
 
+# import navigation 
+from auto_navigationv2 import navigation 
 
 class Operate:
     def __init__(self, args):
@@ -53,7 +55,8 @@ class Operate:
                         'inference': False,
                         'output': False,
                         'save_inference': False,
-                        'save_image': False}
+                        'save_image': False,
+                        'navigation': False}
         self.quit = False
         self.pred_fname = ''
         self.request_recover_robot = False
@@ -181,6 +184,12 @@ class Operate:
                 self.notification = f'No prediction in buffer, save ignored'
             self.command['save_inference'] = False
 
+    def auto_navigation(self):
+        if self.command['navigation']:
+            auto_navigation = navigation(self.ekf, self.pibot)
+            auto_navigation.run()
+            self.command['navigation'] = False
+
     # paint the GUI            
     def draw(self, canvas):
         canvas.blit(self.bg, (0, 0))
@@ -223,7 +232,7 @@ class Operate:
         count_down_surface = TEXT_FONT.render(time_remain, False, (50, 50, 50))
         canvas.blit(count_down_surface, (2 * h_pad + 320 + 5, 530))
         return canvas
-
+    
     @staticmethod
     def draw_pygame_window(canvas, cv2_img, position):
         cv2_img = np.rot90(cv2_img)
@@ -295,11 +304,16 @@ class Operate:
             # save object detection outputs
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_n:
                 self.command['save_inference'] = True
+             # Auto navigation 
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_l: 
+                self.notification = 'Map is saved'
+                self.command['navigation'] = True 
             # quit
             elif event.type == pygame.QUIT:
                 self.quit = True
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.quit = True
+           
         if self.quit:
             pygame.quit()
             sys.exit()
@@ -358,6 +372,7 @@ if __name__ == "__main__":
         operate.record_data()
         operate.save_image()
         operate.detect_target()
+        operate.auto_navigation()
         # visualise
         operate.draw(canvas)
         pygame.display.update()
