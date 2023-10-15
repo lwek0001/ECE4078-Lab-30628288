@@ -100,3 +100,5 @@ def test_ekf_update():
     states = np.array(states).squeeze(2)
 
     assert np.all(np.isclose(states, expected_state)), "MAYBE wrong implementation of update function"
+
+test_derivative_drive()
