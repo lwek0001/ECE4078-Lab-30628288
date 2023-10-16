@@ -272,7 +272,7 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size, fruit_sear
 
     arucos_x, arucos_y = [], []
     # Aruco Markers 
-    aruco_true_pos = read_true_map('TrueMap.txt')[2]
+    aruco_true_pos = read_true_map('EstimateMap.txt')[2]
 
     for i in range(len(aruco_true_pos)):
         for j in range(-marker_size,marker_size):
@@ -371,7 +371,7 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size, fruit_sear
 # main loop
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Fruit searching")
-    parser.add_argument("--map", type=str, default='TrueMap.txt') # change to 'M4_true_map_part.txt' for lv2&3
+    parser.add_argument("--map", type=str, default='EstimateMap.txt') # change to 'M4_true_map_part.txt' for lv2&3
     parser.add_argument("--ip", metavar='', type=str, default='192.168.50.1')
     parser.add_argument("--port", metavar='', type=int, default=8080)
     parser.add_argument("--calib_dir", type=str, default="calibration/param/")
