@@ -207,6 +207,7 @@ class navigation:
         sy = self.get_robot_pose()[1][0]
         goal = self.search_list_dict[fruit]
 
+    
         ox = self.ox
         oy = self.oy
 
@@ -231,18 +232,19 @@ class navigation:
             plt.grid(True)
             plt.axis("equal")
             
-        a_star = AStarPlanner(ox, oy, 10, self.robot_radius, True)
+        a_star = AStarPlanner(ox, oy, 15, self.robot_radius, True)
         rx, ry = a_star.planning(sx*100.0, sy*100.0, goal[0]*100.0, goal[1]*100.0, self.radius_threshold)
-
-        if show_animation:  # pragma: no cover
-            plt.axis("equal")
-            plt.plot(rx, ry, "-r")
-            plt.pause(0.001)
-            plt.show(block = False)
-            plt.pause(0.001)
         
         rx = rx[::-1]
         ry = ry[::-1]
+
+        if show_animation:  # pragma: no cover
+            plt.axis("equal")
+            plt.plot(rx[0:2], ry[0:2], "-r")
+            plt.pause(0.001)
+            plt.show(block = False)
+            plt.pause(0.001)
+
         if len(rx) == 1:
             x_m = rx[0]/100
             y_m = ry[0]/100 

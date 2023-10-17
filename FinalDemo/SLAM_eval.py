@@ -24,7 +24,7 @@ def parse_user_map(fname : str) -> dict:
 
 def match_aruco_points(aruco0 : dict, aruco1 : dict):
     points0 = []
-    points1 = []
+    points1 = [] 
     keys = []
     for key in aruco0:
         if not key in aruco1:

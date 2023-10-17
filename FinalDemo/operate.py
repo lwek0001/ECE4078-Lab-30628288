@@ -200,6 +200,7 @@ class Operate:
                 fruit = fruit_navigation.search_list[i]
                 print("Fruit: {}, Location: {}".format(fruit, fruit_navigation.search_list_dict[fruit]))
                 while drive_flag:
+                    
                     waypoint, drive_flag = fruit_navigation.path_planning(fruit_navigation.search_list[i])
                     if drive_flag == False: 
                         print("Arrived at Fruit: {}".format(fruit_navigation.search_list[i]))
@@ -208,12 +209,17 @@ class Operate:
                         break
                     # Robot Movement
                     lv, rv, dt = fruit_navigation.rotation(waypoint)
+                    operate.take_pic()
                     drive_meas = measure.Drive(lv, -rv, dt)
                     operate.update_slam(drive_meas)
 
                     lv, rv, dt = fruit_navigation.linear_movement(waypoint)
+                    operate.take_pic()
                     drive_meas = measure.Drive(lv, -rv, dt)
                     operate.update_slam(drive_meas)
+
+
+                    
 
         self.command['navigation'] = False
 

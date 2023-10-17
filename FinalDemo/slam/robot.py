@@ -132,8 +132,8 @@ class Robot:
         
         # TODO: add your codes here to compute Jac2 using lin_vel, ang_vel, dt, th, and th2
         if ang_vel == 0:
-            Jac2[0, 0] = np.cos(th)*dt
-            Jac2[1, 0] = np.sin(th)*dt
+            Jac2[1, 0] = np.cos(th)*dt
+            Jac2[0, 0] = np.sin(th)*dt
         else:
             Jac2[0, 0] = (1/ang_vel) * (np.sin(th+dt*ang_vel) - np.sin(th))
             Jac2[0, 1] = (lin_vel/(ang_vel**2))*(np.sin(th) - np.sin(th2)+ang_vel*dt*np.cos(th2))
@@ -146,6 +146,17 @@ class Robot:
 
         # Compute covariance
         cov = np.diag((drive_meas.left_cov, drive_meas.right_cov))
+        lv = drive_meas.left_speed
+        rv = drive_meas.right_speed
+        if lv == 0 and rv == 0: # Stopped
+            cov[0,0] = 0
+            cov[1,1] = 0
+        elif lv == rv:  # Lower covariance since driving straight is consistent
+            cov[0,0] = 1
+            cov[1,1] = 1
+        else:
+            cov[0,0] = 2 # Higher covariance since turning is less consistent
+            cov[1,1] = 2
         cov = Jac @ cov @ Jac.T
         
         return cov
