@@ -89,6 +89,7 @@ class EKF:
 
         F = self.state_transition(raw_drive_meas)
         self.robot.drive(raw_drive_meas)
+        # print(self.get_state_vector()[0:3])
         
 
         # TODO: add your codes here to complete the prediction step
@@ -105,6 +106,8 @@ class EKF:
         tags = [lm.tag for lm in measurements]
         idx_list = [self.taglist.index(tag) for tag in tags]
 
+        # print(tags)
+        
         # Stack measurements and set covariance
         z = np.concatenate([lm.position.reshape(-1,1) for lm in measurements], axis=0)
         R = np.zeros((2*len(measurements),2*len(measurements)))
@@ -138,7 +141,11 @@ class EKF:
     def predict_covariance(self, raw_drive_meas):
         n = self.number_landmarks()*2 + 3
         Q = np.zeros((n,n))
-        Q[0:3,0:3] = self.robot.covariance_drive(raw_drive_meas)+ 0.01*np.eye(3)
+        # if (raw_drive_meas.lv == 0 and raw_drive_meas.rv == 0):
+        #     Q[0:3,0:3] = self.robot.covariance_drive(raw_drive_meas)
+        # else:
+        #     Q[0:3,0:3] = self.robot.covariance_drive(raw_drive_meas)+ 0.01*np.eye(3)
+        Q[0:3,0:3] = self.robot.covariance_drive(raw_drive_meas)
         return Q
 
     def add_landmarks(self, measurements):

@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 args = fake_args()   
-with open("test/slam_test.pk", "rb") as pk_file:
+with open("slam_test.pk", "rb") as pk_file:
     expected_data = pickle.load(pk_file)
 
 
@@ -100,3 +100,5 @@ def test_ekf_update():
     states = np.array(states).squeeze(2)
 
     assert np.all(np.isclose(states, expected_state)), "MAYBE wrong implementation of update function"
+
+test_wheel_scale_calibration()
