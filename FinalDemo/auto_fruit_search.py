@@ -21,13 +21,13 @@ from util.pibot import PenguinPi
 import util.measure as measure
 
 from AStarMod import AStarPlanner
-show_animation = True
+
 class navigation:
     def __init__(self, ekf, pibot):
         self.ekf = ekf
         self.pibot = pibot
         self.parser = argparse.ArgumentParser("Fruit searching")
-        self.parser.add_argument("--map", type=str, default='TrueMap.txt') # change to 'M4_true_map_part.txt' for lv2&3
+        self.parser.add_argument("--map", type=str, default='TrueMap1.txt') # change to 'M4_true_map_part.txt' for lv2&3
         self.parser.add_argument("--ip", metavar='', type=str, default='192.168.50.1')
         self.parser.add_argument("--port", metavar='', type=int, default=8080)
         self.parser.add_argument("--calib_dir", type=str, default="calibration/param/")
@@ -224,7 +224,7 @@ class navigation:
             np.delete(oy, np.where(self.search_list_dict[fruit][0]*100-self.fruit_size))
             np.delete(ox, np.where(self.search_list_dict[fruit][1]*100+j))
 
-        if show_animation:  # pragma: no cover
+        if self.show_animation:  # pragma: no cover
             plt.plot(self.boundaries_x, self.boundaries_y, ".k")
             plt.plot(self.arucos_x, self.arucos_y, "bs")
             plt.plot(self.obs_fruit_x, self.obs_fruit_y, "ro")
@@ -232,13 +232,13 @@ class navigation:
             plt.grid(True)
             plt.axis("equal")
             
-        a_star = AStarPlanner(ox, oy, 15, self.robot_radius, True)
+        a_star = AStarPlanner(ox, oy, 5, self.robot_radius, self.show_animation)
         rx, ry = a_star.planning(sx*100.0, sy*100.0, goal[0]*100.0, goal[1]*100.0, self.radius_threshold)
         
         rx = rx[::-1]
         ry = ry[::-1]
 
-        if show_animation:  # pragma: no cover
+        if self.show_animation:  # pragma: no cover
             plt.axis("equal")
             plt.plot(rx[0:2], ry[0:2], "-r")
             plt.pause(0.001)
@@ -276,7 +276,7 @@ class navigation:
 
         self.arucos_x, self.arucos_y = [], []
         # Aruco Markers 
-        aruco_true_pos = self.read_true_map('TrueMap.txt')[2]
+        aruco_true_pos = self.read_true_map('TrueMap1.txt')[2]
 
         for i in range(len(aruco_true_pos)):
             for j in range(-self.marker_size,self.marker_size):
@@ -359,7 +359,7 @@ class navigation:
         self.obstacle_list = list(set(self.fruits_list)-set(self.search_list))
         self.obstacle_list_dict = self.print_target_fruits_pos(self.obstacle_list, self.fruits_list, self.fruits_true_pos)
 
-        self.driving_option, self.marker_size, self.fruit_size, self.radius_threshold, self.robot_radius = input("manual or automatic drive? [M/A] ,marker threshold?, fruit_threshold?, radius_threshold? , robot_radius?").split(", ",5)
+        self.driving_option, self.marker_size, self.fruit_size, self.radius_threshold, self.robot_radius, self.show_animation = input("manual or automatic drive? [M/A] ,marker threshold?, fruit_threshold?, radius_threshold? , robot_radius?, show_animation?").split(", ",6)
         self.marker_size = int(self.marker_size)
         self.fruit_size = int(self.fruit_size)
         self.radius_threshold = int(self.radius_threshold)
