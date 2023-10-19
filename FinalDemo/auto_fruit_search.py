@@ -138,6 +138,10 @@ class navigation:
         while True:
             # enter the waypoints
             # instead of manually enter waypoints, you can give coordinates by clicking on a map, see camera_calibration.py from M2
+            uexit = input("finished? [y/n]")
+            if uexit == 'y' or uexit == 'Y':
+                uexit = True
+                return uexit
             x,y = 0.0,0.0
             x = input("X coordinate of the waypoint: ")
             try:
@@ -151,23 +155,26 @@ class navigation:
             except ValueError:
                 print("Please enter a number.")
                 continue
+            break
+        self.manual_waypoint([x, y])
+            # # estimate the robot's pose
+            # robot_pose = self.get_robot_pose()
 
-            # estimate the robot's pose
-            robot_pose = self.get_robot_pose()
-
-            # robot drives to the waypoint
-            waypoint = [x,y]
-            new_pose_angle = self.drive_to_point(waypoint,robot_pose)
-            updated_pose = np.array([x,y,new_pose_angle]).reshape((3,1))
+            # # robot drives to the waypoint
+            # waypoint = [x,y]
+            # new_pose_angle = self.drive_to_point(waypoint,robot_pose)
+            # updated_pose = np.array([x,y,new_pose_angle]).reshape((3,1))
             
-            robot_pose = self.get_robot_pose()
-            print("Finished driving to waypoint: {}; New robot pose: {}".format(waypoint,robot_pose))
+            # robot_pose = self.get_robot_pose()
+            # print("Finished driving to waypoint: {}; New robot pose: {}".format(waypoint,robot_pose))
 
-            # exit
-            self.pibot.set_velocity([0, 0])
-            uInput = input("Add a new waypoint? [Y/N]")
-            if uInput == 'N' or uInput == 'n':
-                break
+            # # exit
+            # self.pibot.set_velocity([0, 0])
+            # uInput = input("Add a new waypoint? [Y/N]")
+            # if uInput == 'N' or uInput == 'n':
+            #     break
+        uexit = False
+        return uexit
 
     def rotation(self, waypoint):
         wheel_vel = 30 # tick
