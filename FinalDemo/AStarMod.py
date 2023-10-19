@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-
+show_animation = True
 
 class AStarPlanner:
 
@@ -257,7 +257,7 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size):
         ox.append(-boundary_size)
         oy.append(i)
 
-    if self.show_animation:  # pragma: no cover
+    if show_animation:  # pragma: no cover
         plt.plot(ox, oy, ".k")
         plt.plot(sx, sy, "og")
         plt.plot(gx, gy, "xb")
@@ -267,7 +267,7 @@ def find_path(sx, sy, gx, gy, grid_size, robot_radius, boundary_size):
     a_star = AStarPlanner(ox, oy, grid_size, robot_radius)
     rx, ry = a_star.planning(sx, sy, gx, gy, 50)
 
-    if self.show_animation:  # pragma: no cover
+    if show_animation:  # pragma: no cover
         plt.plot(rx, ry, "-r")
         plt.pause(0.001)
         plt.show()

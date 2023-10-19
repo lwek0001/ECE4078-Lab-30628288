@@ -141,10 +141,10 @@ class EKF:
     def predict_covariance(self, raw_drive_meas):
         n = self.number_landmarks()*2 + 3
         Q = np.zeros((n,n))
-        # if (raw_drive_meas.lv == 0 and raw_drive_meas.rv == 0):
-        #     Q[0:3,0:3] = self.robot.covariance_drive(raw_drive_meas)
-        # else:
-        #     Q[0:3,0:3] = self.robot.covariance_drive(raw_drive_meas)+ 0.01*np.eye(3)
+        if (raw_drive_meas.lv == 0 and raw_drive_meas.rv == 0):
+            Q[0:3,0:3] = self.robot.covariance_drive(raw_drive_meas)
+        else:
+            Q[0:3,0:3] = self.robot.covariance_drive(raw_drive_meas)+ 0.01*np.eye(3)
         Q[0:3,0:3] = self.robot.covariance_drive(raw_drive_meas)
         return Q
 

@@ -27,7 +27,7 @@ class navigation:
         self.ekf = ekf
         self.pibot = pibot
         self.parser = argparse.ArgumentParser("Fruit searching")
-        self.parser.add_argument("--map", type=str, default='TrueMap1.txt') # change to 'M4_true_map_part.txt' for lv2&3
+        self.parser.add_argument("--map", type=str, default='EstimateMap.txt') # change to 'M4_true_map_part.txt' for lv2&3
         self.parser.add_argument("--ip", metavar='', type=str, default='192.168.50.1')
         self.parser.add_argument("--port", metavar='', type=int, default=8080)
         self.parser.add_argument("--calib_dir", type=str, default="calibration/param/")
@@ -276,7 +276,7 @@ class navigation:
 
         self.arucos_x, self.arucos_y = [], []
         # Aruco Markers 
-        aruco_true_pos = self.read_true_map('TrueMap1.txt')[2]
+        aruco_true_pos = self.read_true_map('EstimateMap.txt')[2]
 
         for i in range(len(aruco_true_pos)):
             for j in range(-self.marker_size,self.marker_size):

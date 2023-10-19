@@ -136,27 +136,17 @@ class Robot:
             Jac2[1, 0] = np.sin(th)*dt
         else:
             Jac2[0, 0] = (1/ang_vel) * (np.sin(th+dt*ang_vel) - np.sin(th))
-            Jac2[0, 1] = (lin_vel/(ang_vel**2))*(np.sin(th) - np.sin(th2)+ang_vel*dt*np.cos(th2))
-            Jac2[1, 1] = (lin_vel/(ang_vel**2))*(-np.cos(th) + np.cos(th2)+ang_vel*dt*np.sin(th2))
-            Jac2[1, 0] = (1/ang_vel) * (-np.cos(th+dt*ang_vel) + np.cos(th))
+            Jac2[0, 1] = -(lin_vel/(ang_vel**2))*(-np.sin(th) + np.sin(th2)) + lin_vel/ang_vel*(dt*np.cos(th2))
+            Jac2[1, 1] = (lin_vel/(ang_vel**2))*(-np.cos(th) + np.cos(th2)) + lin_vel/ang_vel*(dt*np.sin(th2))
+            Jac2[1, 0] = -(1/ang_vel) * (np.cos(th+dt*ang_vel) - np.cos(th))
             Jac2[2, 1] = dt
+            
             
         # Derivative of x,y,theta w.r.t. left_speed, right_speed
         Jac = Jac2 @ Jac1
 
         # Compute covariance
         cov = np.diag((drive_meas.left_cov, drive_meas.right_cov))
-        # lv = drive_meas.left_speed
-        # rv = drive_meas.right_speed
-        # if lv == 0 and rv == 0: # Stopped
-        #     cov[0,0] = 0
-        #     cov[1,1] = 0
-        # elif lv == rv:  # Lower covariance since driving straight is consistent
-        #     cov[0,0] = 1
-        #     cov[1,1] = 1
-        # else:
-        #     cov[0,0] = 2 # Higher covariance since turning is less consistent
-        #     cov[1,1] = 2
         cov = Jac @ cov @ Jac.T
         
         return cov
