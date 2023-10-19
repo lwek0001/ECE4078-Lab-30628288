@@ -100,7 +100,7 @@ if __name__ == '__main__':
     # us_aruco = parse_user_map(args.estimate)
 
     gt_aruco = parse_groundtruth('TrueMap2.txt')
-    us_aruco = parse_user_map('lab_output/slam.txt')
+    us_aruco = parse_user_map('lab_output/slam_1.txt')
 
     taglist, us_vec, gt_vec = match_aruco_points(us_aruco, gt_aruco)
 

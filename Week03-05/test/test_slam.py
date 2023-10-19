@@ -63,7 +63,7 @@ def test_derivative_drive():
     robot = operate.ekf.robot
     for i, drive_meas in enumerate(test_drive_measurement):
         DFx = robot.derivative_drive(drive_meas)
-        assert np.all(np.isclose(DFx, expected_data["DFx"][i], rtol=1e-1)), "wrong implementation of derivative_drive"
+        assert np.all(np.isclose(DFx, expected_data["DFx"][i], rtol = 1e-1)), "wrong implementation of derivative_drive"
 
 def test_covariance_drive():
     operate = Operate(args)
@@ -101,4 +101,4 @@ def test_ekf_update():
 
     assert np.all(np.isclose(states, expected_state)), "MAYBE wrong implementation of update function"
 
-test_derivative_drive()
+test_covariance_drive()
